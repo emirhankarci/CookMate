@@ -15,7 +15,7 @@ sealed class CookingSessionEvent {
     ) : CookingSessionEvent()
 
     // Mevcut session'a katıl
-    data class JoinSession(
+    data class JoinWaitingSession(
         val sessionId: String,
         val currentUserGender: Gender
     ) : CookingSessionEvent()
@@ -39,6 +39,7 @@ sealed class CookingSessionEvent {
     object DismissCoopDialog : CookingSessionEvent()
     object DismissWaitingDialog : CookingSessionEvent()
     object DismissCompletionDialog : CookingSessionEvent()
+    object ShowCoopModeDialog : CookingSessionEvent()
 
     // Hata durumunu temizle
     object ClearError : CookingSessionEvent()

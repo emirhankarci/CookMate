@@ -229,4 +229,29 @@ class CookingSessionRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun getWaitingSessionForUser(userId: String): Result<CookingSession?> {
+        return try {
+            val snapshot = firebaseDataSource.getCookingSessionsRef()
+                .orderByChild("status")
+                .equalTo(SessionStatus.WAITING.name)
+                .get()
+                .await()
+
+            var waitingSession: CookingSession? = null
+
+            snapshot.children.forEach { child ->
+                val session = child.getValue(CookingSession::class.java)
+                if (session != null &&
+                    (session.femaleUserId == userId || session.maleUserId == userId)) {
+                    waitingSession = session
+                    return@forEach
+                }
+            }
+
+            Result.success(waitingSession)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

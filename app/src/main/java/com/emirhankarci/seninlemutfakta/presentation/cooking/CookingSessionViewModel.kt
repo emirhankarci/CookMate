@@ -28,6 +28,10 @@ class CookingSessionViewModel @Inject constructor(
     private var sessionObserverJob: Job? = null
     private var connectionCheckJob: Job? = null
 
+    init {
+        checkForWaitingSession()
+    }
+
     fun onEvent(event: CookingSessionEvent) {
         when (event) {
             is CookingSessionEvent.StartSession -> startSession(
@@ -40,7 +44,7 @@ class CookingSessionViewModel @Inject constructor(
                 currentUserGender = event.currentUserGender
             )
 
-            is CookingSessionEvent.JoinSession -> joinSession(
+            is CookingSessionEvent.JoinWaitingSession -> joinWaitingSession(
                 sessionId = event.sessionId,
                 currentUserGender = event.currentUserGender
             )
@@ -50,9 +54,13 @@ class CookingSessionViewModel @Inject constructor(
             is CookingSessionEvent.PauseSession -> pauseSession()
             is CookingSessionEvent.ResumeSession -> resumeSession()
             is CookingSessionEvent.CompleteSession -> completeSession()
+
+            // Dialog event'leri
+            is CookingSessionEvent.ShowCoopModeDialog -> showCoopModeDialog()  // ← EKLE
             is CookingSessionEvent.DismissCoopDialog -> dismissCoopDialog()
             is CookingSessionEvent.DismissWaitingDialog -> dismissWaitingDialog()
             is CookingSessionEvent.DismissCompletionDialog -> dismissCompletionDialog()
+
             is CookingSessionEvent.ClearError -> clearError()
         }
     }
@@ -107,8 +115,9 @@ class CookingSessionViewModel @Inject constructor(
                                 )
                             }
 
-                            // Session'ı başlat
-                            cookingSessionRepository.startSession(sessionId)
+                            if (!isCoopMode) {
+                                cookingSessionRepository.startSession(sessionId)
+                            }
 
                             // Real-time dinlemeyi başlat
                             observeSession(sessionId)
@@ -138,25 +147,27 @@ class CookingSessionViewModel @Inject constructor(
 
     // ==================== SESSION'A KATILMA ====================
 
-    private fun joinSession(sessionId: String, currentUserGender: Gender) {
+    private fun joinWaitingSession(sessionId: String, currentUserGender: Gender) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
 
-            // Session'ı başlat
+            // Session'ı IN_PROGRESS yap
             cookingSessionRepository.startSession(sessionId)
+
+            // Kullanıcı bilgilerini güncelle
+            _state.update {
+                it.copy(
+                    currentUserGender = currentUserGender,
+                    isLoading = false,
+                    showWaitingForPartnerDialog = false
+                )
+            }
 
             // Real-time dinlemeyi başlat
             observeSession(sessionId)
 
             // Connection check başlat
             startConnectionCheck(sessionId)
-
-            _state.update {
-                it.copy(
-                    currentUserGender = currentUserGender,
-                    isLoading = false
-                )
-            }
         }
     }
 
@@ -335,6 +346,33 @@ class CookingSessionViewModel @Inject constructor(
                     _state.update { it.copy(recipe = recipe) }
                 }
         }
+    }
+
+    private fun checkForWaitingSession() {
+        viewModelScope.launch {
+            // TEST için şimdilik female user ID kullan
+            val userId = "test_female_001"  // Gerçekte currentUserId olacak
+
+            cookingSessionRepository.getWaitingSessionForUser(userId)
+                .onSuccess { session ->
+                    if (session != null && session.status == SessionStatus.WAITING) {
+                        // Eş bekliyor, dialog göster
+                        _state.update {
+                            it.copy(
+                                session = session,
+                                showWaitingForPartnerDialog = true
+                            )
+                        }
+
+                        // Recipe bilgisini yükle
+                        loadRecipe(session.countryCode, session.recipeId)
+                    }
+                }
+        }
+    }
+
+    private fun showCoopModeDialog() {
+        _state.update { it.copy(showCoopModeDialog = true) }
     }
 
     private fun dismissCoopDialog() {
