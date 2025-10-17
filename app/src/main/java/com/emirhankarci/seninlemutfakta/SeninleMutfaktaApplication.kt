@@ -8,6 +8,6 @@ class SeninleMutfaktaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
+        // Firebase otomatik başlatılır, ekstra kod gerekmez
     }
 }
