@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "777580135309",
+    "project_id": "seninle-mutfakta",
+    "storage_bucket": "seninle-mutfakta.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:777580135309:android:bdd570c2141ff8a4d873c4",
+        "android_client_info": {
+          "package_name": "com.emirhankarci.seninlemutfakta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiCXeY77wpToGuuZ7HSUT5WavEXJVvfeY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
