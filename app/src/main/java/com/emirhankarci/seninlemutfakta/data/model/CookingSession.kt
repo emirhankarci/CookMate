@@ -45,9 +45,11 @@ data class CookingSession(
 
     fun canProceedToNextStep(): Boolean {
         return if (isCoopMode) {
+            // Coop mode: İkisi de tamamlamalı
             femaleProgress.isCompleted && maleProgress.isCompleted
         } else {
-            true
+            // Solo mode: Sadece aktif kullanıcı tamamlamalı
+            false  // Otomatik geçiş YOK, kullanıcı manuel "Sonraki Adım" basacak
         }
     }
 
