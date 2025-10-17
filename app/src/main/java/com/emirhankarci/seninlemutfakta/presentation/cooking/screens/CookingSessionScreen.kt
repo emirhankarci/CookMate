@@ -104,6 +104,17 @@ fun CookingContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Connection Warning
+        if (!state.isConnected) {
+            ConnectionWarningCard()
+        }
+
+        // Partner Disconnected Warning
+        if (state.session?.isCoopMode == true &&
+            state.partnerConnectionStatus == PartnerConnectionStatus.DISCONNECTED) {
+            PartnerDisconnectedCard()
+        }
+
         // Progress Bar
         ProgressSection(
             progress = state.getProgressPercentage(),
@@ -435,4 +446,72 @@ fun CompletionDialog(
             }
         }
     )
+}
+
+@Composable
+fun ConnectionWarningCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "⚠️",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Column {
+                Text(
+                    text = "Bağlantı Kesildi",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Text(
+                    text = "İnternet bağlantınızı kontrol edin",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PartnerDisconnectedCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "⏸️",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Column {
+                Text(
+                    text = "Eşiniz Bağlantısını Kaybetti",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "30 saniyedir çevrimdışı. Lütfen bekleyin.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
 }

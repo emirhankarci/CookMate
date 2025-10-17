@@ -59,4 +59,14 @@ class FirebaseDataSource @Inject constructor() {
 
     // Helper: Get current user ID
     fun getCurrentUserId(): String? = auth.currentUser?.uid
+
+    // ==================== CONNECTION MONITORING ====================
+
+    fun getConnectionRef(): DatabaseReference {
+        return database.getReference(".info/connected")
+    }
+
+    fun isConnected(): DatabaseReference {
+        return database.getReference(".info/connected")
+    }
 }

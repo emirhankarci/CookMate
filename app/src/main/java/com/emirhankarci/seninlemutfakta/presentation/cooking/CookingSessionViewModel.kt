@@ -27,6 +27,8 @@ class CookingSessionViewModel @Inject constructor(
 
     private var sessionObserverJob: Job? = null
     private var connectionCheckJob: Job? = null
+    private var connectionObserverJob: Job? = null  // ← YENİ EKLE
+    private var timeoutCheckJob: Job? = null
 
     init {
         checkForWaitingSession()
@@ -41,6 +43,11 @@ class CookingSessionViewModel @Inject constructor(
                 coupleId = event.coupleId,
                 femaleUserId = event.femaleUserId,
                 maleUserId = event.maleUserId,
+                currentUserGender = event.currentUserGender
+            )
+
+            is CookingSessionEvent.JoinSession -> joinSession(  // ← YENİ EKLE
+                sessionId = event.sessionId,
                 currentUserGender = event.currentUserGender
             )
 
@@ -124,6 +131,12 @@ class CookingSessionViewModel @Inject constructor(
 
                             // Connection check başlat
                             startConnectionCheck(sessionId)
+
+                            // Connection observer başlat
+                            startConnectionObserver()
+
+                            // Timeout check başlat
+                            startTimeoutCheck()
                         }
                         .onFailure { exception ->
                             _state.update {
@@ -147,6 +160,35 @@ class CookingSessionViewModel @Inject constructor(
 
     // ==================== SESSION'A KATILMA ====================
 
+    private fun joinSession(sessionId: String, currentUserGender: Gender) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            // Session'ı başlat
+            cookingSessionRepository.startSession(sessionId)
+
+            // Kullanıcı bilgilerini güncelle
+            _state.update {
+                it.copy(
+                    currentUserGender = currentUserGender,
+                    isLoading = false
+                )
+            }
+
+            // Real-time dinlemeyi başlat
+            observeSession(sessionId)
+
+            // Connection check başlat
+            startConnectionCheck(sessionId)
+
+            // Connection observer başlat
+            startConnectionObserver()
+
+            // Timeout check başlat
+            startTimeoutCheck()
+        }
+    }
+
     private fun joinWaitingSession(sessionId: String, currentUserGender: Gender) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -168,6 +210,12 @@ class CookingSessionViewModel @Inject constructor(
 
             // Connection check başlat
             startConnectionCheck(sessionId)
+
+            // ← YENİ EKLE: Connection observer başlat
+            startConnectionObserver()
+
+            // ← YENİ EKLE: Timeout check başlat
+            startTimeoutCheck()
         }
     }
 
@@ -371,6 +419,67 @@ class CookingSessionViewModel @Inject constructor(
         }
     }
 
+    // ==================== CONNECTION MONITORING ====================
+
+    private fun startConnectionObserver() {
+        connectionObserverJob?.cancel()
+
+        connectionObserverJob = viewModelScope.launch {
+            cookingSessionRepository.observeConnectionStatus()
+                .collect { isConnected ->
+                    _state.update { it.copy(isConnected = isConnected) }
+
+                    if (!isConnected) {
+                        // Bağlantı kesildi, session'ı duraklat
+                        val session = _state.value.session
+                        if (session != null && session.status == SessionStatus.IN_PROGRESS) {
+                            cookingSessionRepository.pauseSession(session.sessionId)
+                        }
+                    } else {
+                        // Bağlantı geri geldi, session'ı devam ettir
+                        val session = _state.value.session
+                        if (session != null && session.status == SessionStatus.PAUSED) {
+                            cookingSessionRepository.startSession(session.sessionId)
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun startTimeoutCheck() {
+        timeoutCheckJob?.cancel()
+
+        timeoutCheckJob = viewModelScope.launch {
+            while (true) {
+                delay(5000) // Her 5 saniyede kontrol et
+
+                val session = _state.value.session
+                val currentGender = _state.value.currentUserGender
+
+                if (session != null && session.isCoopMode) {
+                    val partnerProgress = session.getPartnerProgress(currentGender)
+
+                    // Partner timeout kontrolü (30 saniye)
+                    val isTimeout = cookingSessionRepository.isPartnerTimeout(
+                        lastSeen = partnerProgress.lastSeen,
+                        timeoutSeconds = 30
+                    )
+
+                    val newStatus = when {
+                        !partnerProgress.isOnline -> PartnerConnectionStatus.OFFLINE
+                        isTimeout -> PartnerConnectionStatus.DISCONNECTED
+                        else -> PartnerConnectionStatus.ONLINE
+                    }
+
+                    _state.update {
+                        it.copy(partnerConnectionStatus = newStatus)
+                    }
+                }
+            }
+        }
+    }
+
+
     private fun showCoopModeDialog() {
         _state.update { it.copy(showCoopModeDialog = true) }
     }
@@ -410,7 +519,10 @@ class CookingSessionViewModel @Inject constructor(
             }
         }
 
+        // Tüm job'ları iptal et
         sessionObserverJob?.cancel()
         connectionCheckJob?.cancel()
+        connectionObserverJob?.cancel()
+        timeoutCheckJob?.cancel()
     }
 }

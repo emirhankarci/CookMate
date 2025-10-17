@@ -14,6 +14,12 @@ sealed class CookingSessionEvent {
         val currentUserGender: Gender
     ) : CookingSessionEvent()
 
+    // Mevcut session'a katıl (genel)
+    data class JoinSession(
+        val sessionId: String,
+        val currentUserGender: Gender
+    ) : CookingSessionEvent()
+
     // Mevcut session'a katıl
     data class JoinWaitingSession(
         val sessionId: String,

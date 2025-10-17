@@ -254,4 +254,31 @@ class CookingSessionRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    // ==================== CONNECTION MONITORING ====================
+
+    fun observeConnectionStatus(): Flow<Boolean> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val isConnected = snapshot.getValue(Boolean::class.java) ?: false
+                trySend(isConnected)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        val ref = firebaseDataSource.getConnectionRef()
+        ref.addValueEventListener(listener)
+
+        awaitClose { ref.removeEventListener(listener) }
+    }
+
+    // Partner'ın son görülme zamanını kontrol et
+    fun isPartnerTimeout(lastSeen: Long, timeoutSeconds: Int = 30): Boolean {
+        val currentTime = System.currentTimeMillis()
+        val timeDiff = currentTime - lastSeen
+        return timeDiff > (timeoutSeconds * 1000)
+    }
 }
