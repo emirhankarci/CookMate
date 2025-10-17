@@ -2,6 +2,7 @@ package com.emirhankarci.seninlemutfakta.presentation.cooking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.emirhankarci.seninlemutfakta.data.model.CookingSession
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.data.model.RecipeStep
 import com.emirhankarci.seninlemutfakta.data.model.SessionStatus
@@ -30,9 +31,6 @@ class CookingSessionViewModel @Inject constructor(
     private var connectionObserverJob: Job? = null  // ← YENİ EKLE
     private var timeoutCheckJob: Job? = null
 
-    init {
-        checkForWaitingSession()
-    }
 
     fun onEvent(event: CookingSessionEvent) {
         when (event) {
@@ -99,7 +97,14 @@ class CookingSessionViewModel @Inject constructor(
                         return@launch
                     }
 
-                    val totalSteps = recipe.steps.size
+                    // Total steps: Coop mode'da female/male steps, solo'da normal steps
+                    val totalSteps = if (isCoopMode) {
+                        // Coop mode: Female ve male steps aynı sayıda olmalı
+                        maxOf(recipe.femaleSteps.size, recipe.maleSteps.size)
+                    } else {
+                        // Solo mode: Normal steps
+                        recipe.steps.size
+                    }
 
                     // Session oluştur
                     cookingSessionRepository.createSession(
@@ -240,8 +245,17 @@ class CookingSessionViewModel @Inject constructor(
                         loadRecipe(session.countryCode, session.recipeId)
                     }
 
-                    // Mevcut adımı güncelle
-                    val currentStep = _state.value.recipe?.steps?.getOrNull(session.currentStep)
+                    // Mevcut adımı güncelle - Coop mode'a göre farklı adım
+                    val currentStep = if (session.isCoopMode) {
+                        // Coop mode: Gender'a göre adım seç
+                        when (currentGender) {
+                            Gender.FEMALE -> _state.value.recipe?.femaleSteps?.getOrNull(session.currentStep)
+                            Gender.MALE -> _state.value.recipe?.maleSteps?.getOrNull(session.currentStep)
+                        }
+                    } else {
+                        // Solo mode: Normal steps
+                        _state.value.recipe?.steps?.getOrNull(session.currentStep)
+                    }
 
                     // Partner connection status
                     val partnerStatus = when {
@@ -260,10 +274,18 @@ class CookingSessionViewModel @Inject constructor(
                         )
                     }
 
+                    // Debug: İlerleme kontrolü
+                    val canProceed = session.canProceedToNextStep()
+                    val status = session.status
+                    println("🔍 DEBUG: canProceed=$canProceed, status=$status, isCoopMode=${session.isCoopMode}")
+                    println("🔍 Female completed: ${session.femaleProgress.isCompleted}")
+                    println("🔍 Male completed: ${session.maleProgress.isCompleted}")
+
                     // İkisi de tamamladıysa otomatik geç
-                    if (session.canProceedToNextStep() &&
-                        session.status == SessionStatus.IN_PROGRESS) {
-                        delay(1000) // 1 saniye bekle (animasyon için)
+                    if (session.isCoopMode &&
+                        canProceed &&
+                        status == SessionStatus.IN_PROGRESS) {
+                        delay(1000)
                         moveToNextStep()
                     }
 
@@ -380,7 +402,7 @@ class CookingSessionViewModel @Inject constructor(
                     isOnline = true
                 )
 
-                delay(10000) // Her 10 saniyede bir güncelle
+                delay(5000) // Her 5 saniyede bir güncelle
             }
         }
     }
@@ -396,28 +418,63 @@ class CookingSessionViewModel @Inject constructor(
         }
     }
 
-    private fun checkForWaitingSession() {
+    // Belirli bir tarif için waiting session kontrolü (CoopMode seçildiğinde çağrılır)
+    fun checkWaitingSessionForCouple(coupleId: String, recipeId: String) {
         viewModelScope.launch {
-            // TEST için şimdilik female user ID kullan
-            val userId = "test_female_001"  // Gerçekte currentUserId olacak
-
-            cookingSessionRepository.getWaitingSessionForUser(userId)
+            cookingSessionRepository.getWaitingSessionForCouple(coupleId, recipeId)
                 .onSuccess { session ->
                     if (session != null && session.status == SessionStatus.WAITING) {
-                        // Eş bekliyor, dialog göster
                         _state.update {
                             it.copy(
                                 session = session,
                                 showWaitingForPartnerDialog = true
                             )
                         }
-
-                        // Recipe bilgisini yükle
                         loadRecipe(session.countryCode, session.recipeId)
                     }
                 }
         }
     }
+
+    // Suspend fonksiyon: Waiting session kontrolü yap ve sonucu bekle
+    suspend fun checkAndGetWaitingSession(coupleId: String, recipeId: String): CookingSession? {
+        var foundSession: CookingSession? = null
+
+        cookingSessionRepository.getWaitingSessionForCouple(coupleId, recipeId)
+            .onSuccess { session ->
+                if (session != null && session.status == SessionStatus.WAITING) {
+                    foundSession = session
+                    _state.update {
+                        it.copy(
+                            session = session,
+                            showWaitingForPartnerDialog = false  // Dialog gösterme, direkt join olacak
+                        )
+                    }
+                    loadRecipe(session.countryCode, session.recipeId)
+                }
+            }
+
+        return foundSession
+    }
+
+    // Couple için herhangi bir waiting session kontrolü (User seçildiğinde çağrılır)
+    fun checkAnyWaitingSessionForCouple(coupleId: String) {
+        viewModelScope.launch {
+            cookingSessionRepository.getAnyWaitingSessionForCouple(coupleId)
+                .onSuccess { session ->
+                    if (session != null && session.status == SessionStatus.WAITING) {
+                        _state.update {
+                            it.copy(
+                                session = session,
+                                showWaitingForPartnerDialog = true
+                            )
+                        }
+                        loadRecipe(session.countryCode, session.recipeId)
+                    }
+                }
+        }
+    }
+
 
     // ==================== CONNECTION MONITORING ====================
 
@@ -459,10 +516,10 @@ class CookingSessionViewModel @Inject constructor(
                 if (session != null && session.isCoopMode) {
                     val partnerProgress = session.getPartnerProgress(currentGender)
 
-                    // Partner timeout kontrolü (30 saniye)
+                    // Partner timeout kontrolü (60 saniye)
                     val isTimeout = cookingSessionRepository.isPartnerTimeout(
                         lastSeen = partnerProgress.lastSeen,
-                        timeoutSeconds = 30
+                        timeoutSeconds = 60  //  60 saniye
                     )
 
                     val newStatus = when {

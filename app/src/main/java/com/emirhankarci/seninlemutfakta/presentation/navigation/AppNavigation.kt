@@ -1,6 +1,7 @@
 package com.emirhankarci.seninlemutfakta.presentation.navigation
 
 import androidx.compose.runtime.*
+import com.emirhankarci.seninlemutfakta.data.model.CookingSession
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionScreen
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionEvent
@@ -15,6 +16,7 @@ import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewMo
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListEvent
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation(
@@ -34,6 +36,13 @@ fun AppNavigation(
     var coupleId by remember { mutableStateOf("") }
 
     val cookingState by cookingSessionViewModel.state.collectAsState()
+
+    // User seçilince couple için waiting session kontrol et
+    LaunchedEffect(coupleId) {
+        if (coupleId.isNotEmpty()) {
+            cookingSessionViewModel.checkAnyWaitingSessionForCouple(coupleId)
+        }
+    }
 
     when (currentScreen) {
         Screen.UserSelection -> {
@@ -78,6 +87,8 @@ fun AppNavigation(
         }
 
         Screen.CoopModeSelection -> {
+            var shouldProceedToGenderSelection by remember { mutableStateOf(false) }
+
             CoopModeSelectionScreen(
                 recipeName = selectedRecipeName,
                 onSoloMode = {
@@ -86,29 +97,85 @@ fun AppNavigation(
                 },
                 onCoopMode = {
                     isCoopMode = true
-                    currentScreen = Screen.GenderSelection
+                    // Coop mode seçildiğinde bu tarif için waiting session kontrolü yap
+                    cookingSessionViewModel.checkWaitingSessionForCouple(coupleId, selectedRecipe)
+                    shouldProceedToGenderSelection = true
                 }
             )
+
+            // Waiting session kontrolü sonrası yönlendirme
+            LaunchedEffect(shouldProceedToGenderSelection, cookingState.showWaitingForPartnerDialog) {
+                if (shouldProceedToGenderSelection) {
+                    // State güncellenmesi için kısa bir süre bekle
+                    kotlinx.coroutines.delay(500)
+
+                    // Eğer waiting session dialog gösterilmediyse GenderSelection'a git
+                    if (!cookingState.showWaitingForPartnerDialog) {
+                        currentScreen = Screen.GenderSelection
+                    }
+                    shouldProceedToGenderSelection = false
+                }
+            }
         }
 
         Screen.GenderSelection -> {
+            val scope = rememberCoroutineScope()
+
             GenderSelectionScreen(
                 onGenderSelected = { gender ->
-                    val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                    val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+                    // ÖNEMLI: Session oluşturmadan önce son bir kez daha waiting session kontrolü yap
+                    // Bu race condition'ı önler
+                    if (isCoopMode) {
+                        // CoopMode'da son bir kontrol yap (suspend fonksiyon kullan)
+                        scope.launch {
+                            val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
 
-                    cookingSessionViewModel.onEvent(
-                        CookingSessionEvent.StartSession(
-                            recipeId = selectedRecipe,
-                            countryCode = selectedCountry,
-                            isCoopMode = isCoopMode,
-                            coupleId = coupleId,
-                            femaleUserId = femaleId,
-                            maleUserId = maleId,
-                            currentUserGender = gender
+                            if (existingSession != null) {
+                                // Mevcut session bulundu, katıl
+                                cookingSessionViewModel.onEvent(
+                                    CookingSessionEvent.JoinWaitingSession(
+                                        sessionId = existingSession.sessionId,
+                                        currentUserGender = gender
+                                    )
+                                )
+                                currentScreen = Screen.CookingSession
+                            } else {
+                                // Waiting session yok, yeni session oluştur
+                                val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
+                                val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+
+                                cookingSessionViewModel.onEvent(
+                                    CookingSessionEvent.StartSession(
+                                        recipeId = selectedRecipe,
+                                        countryCode = selectedCountry,
+                                        isCoopMode = isCoopMode,
+                                        coupleId = coupleId,
+                                        femaleUserId = femaleId,
+                                        maleUserId = maleId,
+                                        currentUserGender = gender
+                                    )
+                                )
+                                currentScreen = Screen.CookingSession
+                            }
+                        }
+                    } else {
+                        // Solo mode: Direkt yeni session oluştur
+                        val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
+                        val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+
+                        cookingSessionViewModel.onEvent(
+                            CookingSessionEvent.StartSession(
+                                recipeId = selectedRecipe,
+                                countryCode = selectedCountry,
+                                isCoopMode = isCoopMode,
+                                coupleId = coupleId,
+                                femaleUserId = femaleId,
+                                maleUserId = maleId,
+                                currentUserGender = gender
+                            )
                         )
-                    )
-                    currentScreen = Screen.CookingSession
+                        currentScreen = Screen.CookingSession
+                    }
                 }
             )
         }
@@ -122,8 +189,8 @@ fun AppNavigation(
         }
     }
 
-    // Waiting Dialog
-    if (cookingState.showWaitingForPartnerDialog) {
+    // Waiting Dialog - Eş bekliyor bildirimi
+    if (cookingState.showWaitingForPartnerDialog && currentScreen != Screen.CookingSession) {
         WaitingForPartnerDialog(
             recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
             partnerName = "Eşiniz",
@@ -133,13 +200,16 @@ fun AppNavigation(
             onJoin = {
                 val session = cookingState.session
                 if (session != null) {
-                    cookingSessionViewModel.onEvent(
-                        CookingSessionEvent.JoinWaitingSession(
-                            sessionId = session.sessionId,
-                            currentUserGender = currentUserGender
-                        )
-                    )
-                    currentScreen = Screen.CookingSession
+                    // Session varsa bilgileri ayarla ve GenderSelection'a git
+                    selectedCountry = session.countryCode
+                    selectedRecipe = session.recipeId
+                    isCoopMode = session.isCoopMode
+
+                    // Dialog'u kapat
+                    cookingSessionViewModel.onEvent(CookingSessionEvent.DismissWaitingDialog)
+
+                    // Gender seçimi için GenderSelection ekranına git
+                    currentScreen = Screen.GenderSelection
                 }
             }
         )

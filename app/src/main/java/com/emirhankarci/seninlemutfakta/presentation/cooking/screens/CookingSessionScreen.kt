@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.data.model.SessionStatus
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionEvent
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionState
@@ -67,9 +68,23 @@ fun CookingSessionScreen(
                     )
                 }
 
-                state.session == null || state.currentStep == null -> {
+                state.session == null -> {
                     Text(
                         text = "Session yükleniyor...",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                state.session.status == SessionStatus.WAITING -> {
+                    WaitingForPartnerContent(
+                        recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
+                        onBack = onBack
+                    )
+                }
+
+                state.currentStep == null -> {
+                    Text(
+                        text = "Tarif yükleniyor...",
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -135,7 +150,9 @@ fun CookingContent(
         // Current Step Card
         CurrentStepCard(
             step = state.currentStep!!,
-            stepNumber = (state.session?.currentStep ?: 0) + 1
+            stepNumber = (state.session?.currentStep ?: 0) + 1,
+            isCoopMode = state.session?.isCoopMode ?: false,  // ← EKLE
+            currentUserGender = state.currentUserGender  // ← EKLE
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -246,7 +263,9 @@ fun PartnerStatusCard(
 @Composable
 fun CurrentStepCard(
     step: com.emirhankarci.seninlemutfakta.data.model.RecipeStep,
-    stepNumber: Int
+    stepNumber: Int,
+    isCoopMode: Boolean = false,
+    currentUserGender: Gender? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -266,6 +285,25 @@ fun CurrentStepCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            // Coop Mode'da görev göstergesi
+            if (isCoopMode && currentUserGender != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (currentUserGender == Gender.FEMALE) "👩‍🍳" else "👨‍🍳",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "Sizin Göreviniz",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                Divider()
+            }
 
             // Step Description
             Text(
@@ -512,6 +550,81 @@ fun PartnerDisconnectedCard() {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun WaitingForPartnerContent(
+    recipeName: String,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Animasyonlu emoji
+        Text(
+            text = "⏳",
+            style = MaterialTheme.typography.displayLarge
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Eşinizi Bekliyorsunuz",
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = recipeName,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+
+                Divider()
+
+                Text(
+                    text = "Eşiniz uygulamayı açtığında size bildirim gelecek ve birlikte tarifinizi yapmaya başlayabileceksiniz.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .size(48.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("İptal Et ve Geri Dön")
         }
     }
 }

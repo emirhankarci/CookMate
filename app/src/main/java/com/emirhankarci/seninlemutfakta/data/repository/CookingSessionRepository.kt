@@ -232,9 +232,8 @@ class CookingSessionRepository @Inject constructor(
 
     suspend fun getWaitingSessionForUser(userId: String): Result<CookingSession?> {
         return try {
+            // Tüm session'ları al ve client-side filtrele
             val snapshot = firebaseDataSource.getCookingSessionsRef()
-                .orderByChild("status")
-                .equalTo(SessionStatus.WAITING.name)
                 .get()
                 .await()
 
@@ -243,7 +242,64 @@ class CookingSessionRepository @Inject constructor(
             snapshot.children.forEach { child ->
                 val session = child.getValue(CookingSession::class.java)
                 if (session != null &&
+                    session.status == SessionStatus.WAITING &&
+                    session.isCoopMode &&
                     (session.femaleUserId == userId || session.maleUserId == userId)) {
+                    waitingSession = session
+                    return@forEach
+                }
+            }
+
+            Result.success(waitingSession)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Couple ID ile waiting session bulma (daha performanslı)
+    suspend fun getWaitingSessionForCouple(accountId: String, currentRecipeId: String): Result<CookingSession?> {
+        return try {
+            val snapshot = firebaseDataSource.getCookingSessionsRef()
+                .orderByChild("accountId")
+                .equalTo(accountId)
+                .get()
+                .await()
+
+            var waitingSession: CookingSession? = null
+
+            snapshot.children.forEach { child ->
+                val session = child.getValue(CookingSession::class.java)
+                if (session != null &&
+                    session.status == SessionStatus.WAITING &&
+                    session.isCoopMode &&
+                    session.recipeId == currentRecipeId) {
+                    waitingSession = session
+                    return@forEach
+                }
+            }
+
+            Result.success(waitingSession)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Couple için herhangi bir waiting session bulma (tarif seçilmeden önce)
+    suspend fun getAnyWaitingSessionForCouple(accountId: String): Result<CookingSession?> {
+        return try {
+            val snapshot = firebaseDataSource.getCookingSessionsRef()
+                .orderByChild("accountId")
+                .equalTo(accountId)
+                .get()
+                .await()
+
+            var waitingSession: CookingSession? = null
+
+            snapshot.children.forEach { child ->
+                val session = child.getValue(CookingSession::class.java)
+                if (session != null &&
+                    session.status == SessionStatus.WAITING &&
+                    session.isCoopMode) {
                     waitingSession = session
                     return@forEach
                 }
