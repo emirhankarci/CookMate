@@ -1,11 +1,24 @@
 package com.emirhankarci.seninlemutfakta.data.model
 
+import com.google.firebase.database.PropertyName
+
 data class StepProgress(
     val currentStepIndex: Int = 0,
-    val isCompleted: Boolean = false,
+
+    @get:PropertyName("isCompleted")
+    @set:PropertyName("isCompleted")
+    var isCompleted: Boolean = false,
+
     val completedAt: Long = 0,
-    val isWaiting: Boolean = false,
-    val isOnline: Boolean = true,
+
+    @get:PropertyName("isWaiting")
+    @set:PropertyName("isWaiting")
+    var isWaiting: Boolean = false,
+
+    @get:PropertyName("isOnline")
+    @set:PropertyName("isOnline")
+    var isOnline: Boolean = true,
+
     val lastSeen: Long = System.currentTimeMillis()
 ) {
     constructor() : this(0, false, 0, false, true, System.currentTimeMillis())

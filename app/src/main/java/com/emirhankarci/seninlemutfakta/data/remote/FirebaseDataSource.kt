@@ -10,7 +10,10 @@ import javax.inject.Singleton
 class FirebaseDataSource @Inject constructor() {
 
     // Firebase instances
-    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    // Europe-west1 bölgesine bağlan
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance(
+        "https://seninle-mutfakta-default-rtdb.europe-west1.firebasedatabase.app"
+    )
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     // Database references

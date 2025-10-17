@@ -1,11 +1,17 @@
 package com.emirhankarci.seninlemutfakta.data.model
 
+import com.google.firebase.database.PropertyName
+
 data class CookingSession(
     val sessionId: String = "",
     val recipeId: String = "",
     val countryCode: String = "",
     val accountId: String = "",
-    val isCoopMode: Boolean = false,
+
+    @get:PropertyName("isCoopMode")
+    @set:PropertyName("isCoopMode")
+    var isCoopMode: Boolean = false,
+
     val femaleUserId: String = "",
     val maleUserId: String = "",
     val currentStep: Int = 0,
