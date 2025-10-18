@@ -41,7 +41,10 @@ class RecipeListViewModel @Inject constructor(
             firebaseRepository.getCountry(countryCode)
                 .onSuccess { country ->
                     _state.update {
-                        it.copy(countryName = country?.name ?: "")
+                        it.copy(
+                            countryName = country?.name ?: "",
+                            countryFlagEmoji = country?.flagEmoji ?: ""
+                        )
                     }
                 }
 
