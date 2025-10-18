@@ -207,6 +207,37 @@ class CookingSessionRepository @Inject constructor(
         awaitClose { ref.removeEventListener(listener) }
     }
 
+    // Couple için WAITING session'ları real-time dinle
+    fun observeWaitingSessionForCouple(accountId: String): Flow<CookingSession?> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var waitingSession: CookingSession? = null
+
+                snapshot.children.forEach { child ->
+                    val session = child.getValue(CookingSession::class.java)
+                    if (session != null &&
+                        session.accountId == accountId &&
+                        session.status == SessionStatus.WAITING &&
+                        session.isCoopMode) {
+                        waitingSession = session
+                        return@forEach
+                    }
+                }
+
+                trySend(waitingSession)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        val ref = firebaseDataSource.getCookingSessionsRef()
+        ref.addValueEventListener(listener)
+
+        awaitClose { ref.removeEventListener(listener) }
+    }
+
     // ==================== PARTNER STATUS ====================
 
     suspend fun updateOnlineStatus(

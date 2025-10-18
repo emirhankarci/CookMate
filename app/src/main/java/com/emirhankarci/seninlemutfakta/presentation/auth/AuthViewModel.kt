@@ -3,6 +3,7 @@ package com.emirhankarci.seninlemutfakta.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.emirhankarci.seninlemutfakta.data.repository.AuthRepository
+import com.emirhankarci.seninlemutfakta.data.repository.CoupleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val coupleRepository: CoupleRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -28,10 +30,9 @@ class AuthViewModel @Inject constructor(
         when (event) {
             is AuthEvent.Login -> login(event.email, event.password)
             is AuthEvent.Register -> register(
-                event.coupleName,
-                event.femaleEmail,
-                event.maleEmail,
-                event.password
+                event.email,
+                event.password,
+                event.coupleName
             )
             is AuthEvent.SendPasswordReset -> sendPasswordReset(event.email)
             is AuthEvent.Logout -> logout()
@@ -75,26 +76,40 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun register(
-        coupleName: String,
-        femaleEmail: String,
-        maleEmail: String,
-        password: String
+        email: String,
+        password: String,
+        coupleName: String
     ) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // İlk olarak female email ile kayıt yap (primary account)
-            authRepository.registerWithEmail(femaleEmail, password)
+            // Tek email ile çift hesabı oluştur
+            authRepository.registerWithEmail(email, password)
                 .onSuccess { user ->
-                    // TODO: Couple profilini Firebase'e kaydet (coupleName, femaleEmail, maleEmail)
-                    // TODO: Male kullanıcıyı da oluştur ve couple ile ilişkilendir
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            currentUser = user,
-                            isRegisterSuccessful = true,
-                            error = null
-                        )
+                    // Couple profilini Firebase'e kaydet
+                    coupleRepository.createCouple(
+                        userId = user.uid,
+                        email = email,
+                        coupleName = coupleName
+                    ).onSuccess {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                currentUser = user,
+                                isRegisterSuccessful = true,
+                                error = null
+                            )
+                        }
+                    }.onFailure { coupleException ->
+                        // Couple oluşturulamadı ama Firebase Auth başarılı
+                        // Kullanıcıyı silip hata döndürebiliriz ya da sadece uyarı verebiliriz
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Hesap oluşturuldu ancak profil kaydedilemedi: ${coupleException.message}",
+                                isRegisterSuccessful = false
+                            )
+                        }
                     }
                 }
                 .onFailure { exception ->

@@ -7,10 +7,9 @@ sealed class AuthEvent {
     ) : AuthEvent()
 
     data class Register(
-        val coupleName: String,
-        val femaleEmail: String,
-        val maleEmail: String,
-        val password: String
+        val email: String,
+        val password: String,
+        val coupleName: String
     ) : AuthEvent()
 
     data class SendPasswordReset(

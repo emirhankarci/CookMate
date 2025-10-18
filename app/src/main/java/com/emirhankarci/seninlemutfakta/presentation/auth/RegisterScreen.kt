@@ -41,8 +41,7 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit
 ) {
     var coupleName by remember { mutableStateOf("") }
-    var femaleEmail by remember { mutableStateOf("") }
-    var maleEmail by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
@@ -211,14 +210,14 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Female Email Input
+                // Email Input
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Row {
                         Text(
-                            text = "Kadın Email",
+                            text = "Email",
                             fontSize = 12.sp,
                             color = Color.Gray,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -231,12 +230,12 @@ fun RegisterScreen(
                         )
                     }
                     OutlinedTextField(
-                        value = femaleEmail,
-                        onValueChange = { femaleEmail = it },
+                        value = email,
+                        onValueChange = { email = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .drawBehind {
-                                if (femaleEmail.isNotEmpty()) {
+                                if (email.isNotEmpty()) {
                                     drawIntoCanvas { canvas ->
                                         val paint = Paint().asFrameworkPaint()
                                         paint.color = Color(0xFFFF6B6B).copy(alpha = 0.4f).toArgb()
@@ -254,66 +253,7 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("kadın@email.com", fontSize = 14.sp) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF5F5F5),
-                            focusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFFF6B6B),
-                            unfocusedBorderColor = Color.Transparent
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        enabled = !state.isLoading
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Male Email Input
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Row {
-                        Text(
-                            text = "Erkek Email",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Text(
-                            text = " *",
-                            fontSize = 12.sp,
-                            color = Color.Red,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                    }
-                    OutlinedTextField(
-                        value = maleEmail,
-                        onValueChange = { maleEmail = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .drawBehind {
-                                if (maleEmail.isNotEmpty()) {
-                                    drawIntoCanvas { canvas ->
-                                        val paint = Paint().asFrameworkPaint()
-                                        paint.color = Color(0xFFFF6B6B).copy(alpha = 0.4f).toArgb()
-                                        paint.maskFilter = BlurMaskFilter(20f, BlurMaskFilter.Blur.NORMAL)
-
-                                        canvas.nativeCanvas.drawRoundRect(
-                                            0f,
-                                            0f,
-                                            size.width,
-                                            size.height,
-                                            8.dp.toPx(),
-                                            8.dp.toPx(),
-                                            paint
-                                        )
-                                    }
-                                }
-                            },
-                        placeholder = { Text("erkek@email.com", fontSize = 14.sp) },
+                        placeholder = { Text("ornek@email.com", fontSize = 14.sp) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -533,8 +473,7 @@ fun RegisterScreen(
                 Button(
                     onClick = {
                         if (coupleName.isNotBlank() &&
-                            femaleEmail.isNotBlank() &&
-                            maleEmail.isNotBlank() &&
+                            email.isNotBlank() &&
                             password.isNotBlank() &&
                             confirmPassword.isNotBlank() &&
                             agreeToTerms) {
@@ -542,10 +481,9 @@ fun RegisterScreen(
                             if (password == confirmPassword) {
                                 onEvent(
                                     AuthEvent.Register(
-                                        coupleName = coupleName.trim(),
-                                        femaleEmail = femaleEmail.trim(),
-                                        maleEmail = maleEmail.trim(),
-                                        password = password
+                                        email = email.trim(),
+                                        password = password,
+                                        coupleName = coupleName.trim()
                                     )
                                 )
                             }
@@ -580,8 +518,7 @@ fun RegisterScreen(
                     shape = RoundedCornerShape(8.dp),
                     enabled = !state.isLoading &&
                               coupleName.isNotBlank() &&
-                              femaleEmail.isNotBlank() &&
-                              maleEmail.isNotBlank() &&
+                              email.isNotBlank() &&
                               password.isNotBlank() &&
                               confirmPassword.isNotBlank() &&
                               agreeToTerms &&

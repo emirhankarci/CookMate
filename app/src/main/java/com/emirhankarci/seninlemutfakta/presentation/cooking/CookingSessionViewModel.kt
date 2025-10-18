@@ -26,8 +26,9 @@ class CookingSessionViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     private var sessionObserverJob: Job? = null
+    private var waitingSessionObserverJob: Job? = null
     private var connectionCheckJob: Job? = null
-    private var connectionObserverJob: Job? = null  // ← YENİ EKLE
+    private var connectionObserverJob: Job? = null
     private var timeoutCheckJob: Job? = null
 
 
@@ -560,6 +561,42 @@ class CookingSessionViewModel @Inject constructor(
         }
     }
 
+    // Couple için WAITING session'ı real-time dinle
+    fun observeWaitingSessionForCouple(coupleId: String) {
+        waitingSessionObserverJob?.cancel()
+
+        waitingSessionObserverJob = viewModelScope.launch {
+            cookingSessionRepository.observeWaitingSessionForCouple(coupleId)
+                .collect { session ->
+                    if (session != null && session.status == SessionStatus.WAITING) {
+                        // Eğer zaten bir session'daysa dialog gösterme
+                        val currentSession = _state.value.session
+                        if (currentSession == null || currentSession.status == SessionStatus.COMPLETED) {
+                            _state.update {
+                                it.copy(
+                                    session = session,
+                                    showWaitingForPartnerDialog = true
+                                )
+                            }
+                            loadRecipe(session.countryCode, session.recipeId)
+                        }
+                    } else {
+                        // Waiting session yok veya artık WAITING değil
+                        if (_state.value.showWaitingForPartnerDialog) {
+                            _state.update {
+                                it.copy(showWaitingForPartnerDialog = false)
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    // Waiting session observer'ı durdur
+    fun stopObservingWaitingSession() {
+        waitingSessionObserverJob?.cancel()
+    }
+
 
     // ==================== CONNECTION MONITORING ====================
 
@@ -663,6 +700,7 @@ class CookingSessionViewModel @Inject constructor(
 
         // Tüm job'ları iptal et
         sessionObserverJob?.cancel()
+        waitingSessionObserverJob?.cancel()
         connectionCheckJob?.cancel()
         connectionObserverJob?.cancel()
         timeoutCheckJob?.cancel()

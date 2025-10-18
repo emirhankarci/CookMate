@@ -6,14 +6,13 @@ import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.presentation.auth.AuthViewModel
 import com.emirhankarci.seninlemutfakta.presentation.auth.LoginScreen
 import com.emirhankarci.seninlemutfakta.presentation.auth.RegisterScreen
-import com.emirhankarci.seninlemutfakta.presentation.couple.CoupleSetupScreen
+import com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionScreen
 import com.emirhankarci.seninlemutfakta.presentation.couple.CoupleViewModel
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionEvent
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionViewModel
 import com.emirhankarci.seninlemutfakta.presentation.cooking.components.WaitingForPartnerDialog
 import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CookingSessionScreen
 import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CoopModeSelectionScreen
-import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.GenderSelectionScreen
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListEvent
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListScreen
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewModel
@@ -33,41 +32,42 @@ fun AppNavigation(
     val authState by authViewModel.state.collectAsState()
     val coupleState by coupleViewModel.state.collectAsState()
     
-    // Authentication ve couple durumuna göre başlangıç ekranını belirle
-    var currentScreen by remember { 
+    // Authentication durumuna göre başlangıç ekranını belirle
+    var currentScreen by remember {
         mutableStateOf<Screen>(
-            when {
-                !authState.isLoggedIn -> Screen.Login
-                !coupleState.hasCouple -> Screen.CoupleSetup
-                else -> Screen.CountryList
-            }
+            if (!authState.isLoggedIn) Screen.Login else Screen.UserSelection
         )
     }
 
-    // Auth ve couple durumu değiştiğinde ekranı güncelle
-    LaunchedEffect(authState.isLoggedIn, coupleState.hasCouple) {
-        currentScreen = when {
-            !authState.isLoggedIn -> Screen.Login
-            !coupleState.hasCouple -> Screen.CoupleSetup
-            else -> Screen.CountryList
-        }
+    // Auth durumu değiştiğinde ekranı güncelle
+    LaunchedEffect(authState.isLoggedIn) {
+        currentScreen = if (!authState.isLoggedIn) Screen.Login else Screen.UserSelection
     }
+
     var selectedCountry by remember { mutableStateOf("") }
     var selectedRecipe by remember { mutableStateOf("") }
     var selectedRecipeName by remember { mutableStateOf("") }
     var isCoopMode by remember { mutableStateOf(false) }
 
-    // Kullanıcı bilgileri - Firebase Auth ve Couple'dan al
+    // Kullanıcı bilgileri - Firebase Auth'dan al
     val currentUserId = authState.currentUser?.uid ?: ""
-    val currentUserGender = coupleState.currentCouple?.getUserGender(currentUserId) ?: Gender.FEMALE
-    val coupleId = coupleState.currentCouple?.coupleId ?: ""
+    var currentUserGender by remember { mutableStateOf<Gender?>(null) } // Profile seçilene kadar null
+    val coupleId = authState.currentUser?.uid ?: "" // Couple ID = Firebase UID
 
     val cookingState by cookingSessionViewModel.state.collectAsState()
 
-    // User seçilince couple için waiting session kontrol et
-    LaunchedEffect(coupleId) {
-        if (coupleId.isNotEmpty()) {
-            cookingSessionViewModel.checkAnyWaitingSessionForCouple(coupleId)
+    // UserSelection'dan sonra waiting session'ları real-time dinle
+    LaunchedEffect(coupleId, currentUserGender) {
+        if (coupleId.isNotEmpty() && currentUserGender != null) {
+            // Real-time listener başlat
+            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId)
+        }
+    }
+
+    // CookingSession ekranına girildiğinde waiting listener'ı durdur
+    LaunchedEffect(currentScreen) {
+        if (currentScreen == Screen.CookingSession) {
+            cookingSessionViewModel.stopObservingWaitingSession()
         }
     }
 
@@ -77,7 +77,7 @@ fun AppNavigation(
                 state = authState,
                 onEvent = authViewModel::onEvent,
                 onNavigateToRegister = { currentScreen = Screen.Register },
-                onLoginSuccess = { currentScreen = Screen.CoupleSetup }
+                onLoginSuccess = { currentScreen = Screen.UserSelection }
             )
         }
 
@@ -86,20 +86,21 @@ fun AppNavigation(
                 state = authState,
                 onEvent = authViewModel::onEvent,
                 onNavigateToLogin = { currentScreen = Screen.Login },
-                onRegisterSuccess = { currentScreen = Screen.CoupleSetup }
+                onRegisterSuccess = { currentScreen = Screen.UserSelection }
             )
         }
 
-        Screen.CoupleSetup -> {
-            CoupleSetupScreen(
-                state = coupleState,
-                onEvent = coupleViewModel::onEvent,
-                onCoupleReady = { _, _ ->
+        Screen.UserSelection -> {
+            UserSelectionScreen(
+                coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                onGenderSelected = { gender ->
+                    currentUserGender = gender
                     currentScreen = Screen.CountryList
                 },
                 onLogout = {
                     authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                    coupleViewModel.clearCoupleData() // Couple data'sını temizle
+                    coupleViewModel.clearCoupleData()
+                    currentUserGender = null
                     currentScreen = Screen.Login
                 }
             )
@@ -108,11 +109,7 @@ fun AppNavigation(
         Screen.CountryList -> {
             // Çift bilgilerini hazırla
             val coupleInfo = coupleState.currentCouple?.let { couple ->
-                when {
-                    couple.isComplete -> "✅ Çift Tamamlandı!\nDavet Kodu: ${couple.inviteCode}"
-                    couple.needsPartner() -> "⏳ Eş Bekleniyor...\nDavet Kodu: ${couple.inviteCode}\n(Eşinizle paylaşın)"
-                    else -> "💕 Çift Aktif"
-                }
+                "💕 ${couple.coupleName}"
             } ?: ""
 
             CountryListScreen(
@@ -126,7 +123,8 @@ fun AppNavigation(
                 },
                 onLogout = {
                     authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                    coupleViewModel.clearCoupleData() // Couple data'sını temizle
+                    coupleViewModel.clearCoupleData()
+                    currentUserGender = null
                     currentScreen = Screen.Login
                 },
                 coupleInfo = coupleInfo
@@ -151,46 +149,37 @@ fun AppNavigation(
         }
 
         Screen.CoopModeSelection -> {
-            var shouldProceedToGenderSelection by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
 
             CoopModeSelectionScreen(
                 recipeName = selectedRecipeName,
                 onSoloMode = {
                     isCoopMode = false
-                    currentScreen = Screen.GenderSelection
+                    // Solo mode: Profil genderını kullan, direkt session'a git
+                    currentUserGender?.let { gender ->
+                        val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
+                        val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+
+                        cookingSessionViewModel.onEvent(
+                            CookingSessionEvent.StartSession(
+                                recipeId = selectedRecipe,
+                                countryCode = selectedCountry,
+                                isCoopMode = false,
+                                coupleId = coupleId,
+                                femaleUserId = femaleId,
+                                maleUserId = maleId,
+                                currentUserGender = gender
+                            )
+                        )
+                        currentScreen = Screen.CookingSession
+                    }
                 },
                 onCoopMode = {
                     isCoopMode = true
-                    // Coop mode seçildiğinde bu tarif için waiting session kontrolü yap
-                    cookingSessionViewModel.checkWaitingSessionForCouple(coupleId, selectedRecipe)
-                    shouldProceedToGenderSelection = true
-                }
-            )
-
-            // Waiting session kontrolü sonrası yönlendirme
-            LaunchedEffect(shouldProceedToGenderSelection, cookingState.showWaitingForPartnerDialog) {
-                if (shouldProceedToGenderSelection) {
-                    // State güncellenmesi için kısa bir süre bekle
-                    kotlinx.coroutines.delay(500)
-
-                    // Eğer waiting session dialog gösterilmediyse GenderSelection'a git
-                    if (!cookingState.showWaitingForPartnerDialog) {
-                        currentScreen = Screen.GenderSelection
-                    }
-                    shouldProceedToGenderSelection = false
-                }
-            }
-        }
-
-        Screen.GenderSelection -> {
-            val scope = rememberCoroutineScope()
-
-            GenderSelectionScreen(
-                onGenderSelected = { gender ->
-                    if (isCoopMode) {
-                        // CoopMode: Atomic session creation/join işlemi
+                    // Coop mode: Profil genderını kullan, session oluştur/katıl
+                    currentUserGender?.let { gender ->
                         scope.launch {
-                            // 1. Önce mevcut session kontrolü yap
+                            // 1. Önce mevcut waiting session kontrolü yap
                             val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
 
                             if (existingSession != null) {
@@ -211,7 +200,7 @@ fun AppNavigation(
                                     CookingSessionEvent.CreateOrJoinSession(
                                         recipeId = selectedRecipe,
                                         countryCode = selectedCountry,
-                                        isCoopMode = isCoopMode,
+                                        isCoopMode = true,
                                         coupleId = coupleId,
                                         femaleUserId = femaleId,
                                         maleUserId = maleId,
@@ -221,23 +210,6 @@ fun AppNavigation(
                             }
                             currentScreen = Screen.CookingSession
                         }
-                    } else {
-                        // Solo mode: Direkt yeni session oluştur
-                        val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                        val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
-
-                        cookingSessionViewModel.onEvent(
-                            CookingSessionEvent.StartSession(
-                                recipeId = selectedRecipe,
-                                countryCode = selectedCountry,
-                                isCoopMode = isCoopMode,
-                                coupleId = coupleId,
-                                femaleUserId = femaleId,
-                                maleUserId = maleId,
-                                currentUserGender = gender
-                            )
-                        )
-                        currentScreen = Screen.CookingSession
                     }
                 }
             )
@@ -262,8 +234,8 @@ fun AppNavigation(
             },
             onJoin = {
                 val session = cookingState.session
-                if (session != null) {
-                    // Session varsa bilgileri ayarla ve GenderSelection'a git
+                if (session != null && currentUserGender != null) {
+                    // Session varsa bilgileri ayarla ve direkt katıl
                     selectedCountry = session.countryCode
                     selectedRecipe = session.recipeId
                     isCoopMode = session.isCoopMode
@@ -271,8 +243,16 @@ fun AppNavigation(
                     // Dialog'u kapat
                     cookingSessionViewModel.onEvent(CookingSessionEvent.DismissWaitingDialog)
 
-                    // Gender seçimi için GenderSelection ekranına git
-                    currentScreen = Screen.GenderSelection
+                    // Profil genderı ile session'a katıl
+                    cookingSessionViewModel.onEvent(
+                        CookingSessionEvent.JoinWaitingSession(
+                            sessionId = session.sessionId,
+                            currentUserGender = currentUserGender!!
+                        )
+                    )
+
+                    // CookingSession ekranına git
+                    currentScreen = Screen.CookingSession
                 }
             }
         )
