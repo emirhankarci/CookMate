@@ -10,15 +10,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.emirhankarci.seninlemutfakta.data.model.Country
 
 @Composable
 fun CountryListScreen(
     viewModel: CountryListViewModel,
-    onCountryClick: (String) -> Unit
+    onCountryClick: (String) -> Unit,
+    onLogout: () -> Unit = {},
+    coupleInfo: String = ""
 ) {
     val state by viewModel.state.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -42,15 +47,77 @@ fun CountryListScreen(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 48.dp), // Status bar için extra top padding
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        Text(
-                            text = "Ülkeler",
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                        // Başlık ve çıkış yap butonu
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Ülkeler",
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                            TextButton(
+                                onClick = onLogout,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("🚪 Çıkış")
+                            }
+                        }
+                    }
+
+                    // Çift bilgileri kartı
+                    if (coupleInfo.isNotEmpty()) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "💕 Çift Bilgileri",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = coupleInfo,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    
+                                    // Davet kodu varsa kopyalama butonu ekle
+                                    if (coupleInfo.contains("Davet Kodu:")) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        OutlinedButton(
+                                            onClick = {
+                                                // Davet kodunu çıkar ve kopyala
+                                                val inviteCode = coupleInfo.substringAfter("Davet Kodu: ").substringBefore("\n").trim()
+                                                clipboardManager.setText(AnnotatedString(inviteCode))
+                                            },
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        ) {
+                                            Text("📋 Kodu Kopyala")
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     items(state.countries) { country ->

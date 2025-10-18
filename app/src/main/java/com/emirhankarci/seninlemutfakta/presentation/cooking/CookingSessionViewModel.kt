@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.emirhankarci.seninlemutfakta.data.model.CookingSession
 import com.emirhankarci.seninlemutfakta.data.model.Gender
-import com.emirhankarci.seninlemutfakta.data.model.RecipeStep
 import com.emirhankarci.seninlemutfakta.data.model.SessionStatus
 import com.emirhankarci.seninlemutfakta.data.repository.CookingSessionRepository
 import com.emirhankarci.seninlemutfakta.data.repository.FirebaseRepository
@@ -35,6 +34,16 @@ class CookingSessionViewModel @Inject constructor(
     fun onEvent(event: CookingSessionEvent) {
         when (event) {
             is CookingSessionEvent.StartSession -> startSession(
+                recipeId = event.recipeId,
+                countryCode = event.countryCode,
+                isCoopMode = event.isCoopMode,
+                coupleId = event.coupleId,
+                femaleUserId = event.femaleUserId,
+                maleUserId = event.maleUserId,
+                currentUserGender = event.currentUserGender
+            )
+
+            is CookingSessionEvent.CreateOrJoinSession -> createOrJoinSession(
                 recipeId = event.recipeId,
                 countryCode = event.countryCode,
                 isCoopMode = event.isCoopMode,
@@ -108,6 +117,82 @@ class CookingSessionViewModel @Inject constructor(
 
                     // Session oluştur
                     cookingSessionRepository.createSession(
+                        recipeId = recipeId,
+                        countryCode = countryCode,
+                        accountId = coupleId,
+                        isCoopMode = isCoopMode,
+                        femaleUserId = femaleUserId,
+                        maleUserId = maleUserId,
+                        totalSteps = totalSteps
+                    )
+                        .onSuccess { sessionId ->
+                            _state.update {
+                                it.copy(
+                                    recipe = recipe,
+                                    currentUserGender = currentUserGender,
+                                    currentUserId = if (currentUserGender == Gender.FEMALE) femaleUserId else maleUserId,
+                                    partnerUserId = if (currentUserGender == Gender.FEMALE) maleUserId else femaleUserId,
+                                    isLoading = false
+                                )
+                            }
+
+                            if (!isCoopMode) {
+                                cookingSessionRepository.startSession(sessionId)
+                            }
+
+                            // Real-time dinlemeyi başlat
+                            observeSession(sessionId)
+
+                            // Connection check başlat
+                            startConnectionCheck(sessionId)
+
+                            // Connection observer başlat
+                            startConnectionObserver()
+
+                            // Timeout check başlat
+                            startTimeoutCheck()
+                        }
+                        .onFailure { exception ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = exception.message ?: "Session oluşturulamadı"
+                                )
+                            }
+                        }
+                }
+                .onFailure { exception ->
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = exception.message ?: "Tarif yüklenemedi"
+                        )
+                    }
+                }
+        }
+    }
+
+    // ==================== ATOMIC SESSION CREATION/JOIN ====================
+
+    private fun createOrJoinSession(
+        recipeId: String,
+        countryCode: String,
+        isCoopMode: Boolean,
+        coupleId: String,
+        femaleUserId: String,
+        maleUserId: String,
+        currentUserGender: Gender
+    ) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            // Önce tarifi yükle
+            firebaseRepository.getRecipe(countryCode, recipeId)
+                .onSuccess { recipe ->
+                    val totalSteps = recipe?.steps?.size ?: 0
+
+                    // Atomic session creation/join
+                    cookingSessionRepository.createOrJoinSession(
                         recipeId = recipeId,
                         countryCode = countryCode,
                         accountId = coupleId,

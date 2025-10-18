@@ -75,10 +75,10 @@ fun UserSelectionScreen(
         Divider()
 
         Text(
-            text = "💡 İpucu: Emülatör 1'de Ayşe, Emülatör 2'de Ahmet seçin",
+            text = "⚠️ ÖNEMLI: Her cihazda FARKLI kullanıcı seçin!\nCihaz 1: Ayşe, Cihaz 2: Ahmet",
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.error
         )
     }
 }

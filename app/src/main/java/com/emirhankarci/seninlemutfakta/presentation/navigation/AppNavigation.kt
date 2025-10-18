@@ -3,7 +3,11 @@ package com.emirhankarci.seninlemutfakta.presentation.navigation
 import androidx.compose.runtime.*
 import com.emirhankarci.seninlemutfakta.data.model.CookingSession
 import com.emirhankarci.seninlemutfakta.data.model.Gender
-import com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionScreen
+import com.emirhankarci.seninlemutfakta.presentation.auth.AuthViewModel
+import com.emirhankarci.seninlemutfakta.presentation.auth.LoginScreen
+import com.emirhankarci.seninlemutfakta.presentation.auth.RegisterScreen
+import com.emirhankarci.seninlemutfakta.presentation.couple.CoupleSetupScreen
+import com.emirhankarci.seninlemutfakta.presentation.couple.CoupleViewModel
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionEvent
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionViewModel
 import com.emirhankarci.seninlemutfakta.presentation.cooking.components.WaitingForPartnerDialog
@@ -20,20 +24,43 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation(
+    authViewModel: AuthViewModel,
+    coupleViewModel: CoupleViewModel,
     countryListViewModel: CountryListViewModel,
     recipeListViewModel: RecipeListViewModel,
     cookingSessionViewModel: CookingSessionViewModel
 ) {
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.UserSelection) }
+    val authState by authViewModel.state.collectAsState()
+    val coupleState by coupleViewModel.state.collectAsState()
+    
+    // Authentication ve couple durumuna göre başlangıç ekranını belirle
+    var currentScreen by remember { 
+        mutableStateOf<Screen>(
+            when {
+                !authState.isLoggedIn -> Screen.Login
+                !coupleState.hasCouple -> Screen.CoupleSetup
+                else -> Screen.CountryList
+            }
+        )
+    }
+
+    // Auth ve couple durumu değiştiğinde ekranı güncelle
+    LaunchedEffect(authState.isLoggedIn, coupleState.hasCouple) {
+        currentScreen = when {
+            !authState.isLoggedIn -> Screen.Login
+            !coupleState.hasCouple -> Screen.CoupleSetup
+            else -> Screen.CountryList
+        }
+    }
     var selectedCountry by remember { mutableStateOf("") }
     var selectedRecipe by remember { mutableStateOf("") }
     var selectedRecipeName by remember { mutableStateOf("") }
     var isCoopMode by remember { mutableStateOf(false) }
 
-    // Kullanıcı bilgileri
-    var currentUserId by remember { mutableStateOf("") }
-    var currentUserGender by remember { mutableStateOf(Gender.FEMALE) }
-    var coupleId by remember { mutableStateOf("") }
+    // Kullanıcı bilgileri - Firebase Auth ve Couple'dan al
+    val currentUserId = authState.currentUser?.uid ?: ""
+    val currentUserGender = coupleState.currentCouple?.getUserGender(currentUserId) ?: Gender.FEMALE
+    val coupleId = coupleState.currentCouple?.coupleId ?: ""
 
     val cookingState by cookingSessionViewModel.state.collectAsState()
 
@@ -45,18 +72,49 @@ fun AppNavigation(
     }
 
     when (currentScreen) {
-        Screen.UserSelection -> {
-            UserSelectionScreen(
-                onUserSelected = { userId, gender, couple ->
-                    currentUserId = userId
-                    currentUserGender = gender
-                    coupleId = couple
+        Screen.Login -> {
+            LoginScreen(
+                state = authState,
+                onEvent = authViewModel::onEvent,
+                onNavigateToRegister = { currentScreen = Screen.Register },
+                onLoginSuccess = { currentScreen = Screen.CoupleSetup }
+            )
+        }
+
+        Screen.Register -> {
+            RegisterScreen(
+                state = authState,
+                onEvent = authViewModel::onEvent,
+                onNavigateToLogin = { currentScreen = Screen.Login },
+                onRegisterSuccess = { currentScreen = Screen.CoupleSetup }
+            )
+        }
+
+        Screen.CoupleSetup -> {
+            CoupleSetupScreen(
+                state = coupleState,
+                onEvent = coupleViewModel::onEvent,
+                onCoupleReady = { _, _ ->
                     currentScreen = Screen.CountryList
+                },
+                onLogout = {
+                    authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                    coupleViewModel.clearCoupleData() // Couple data'sını temizle
+                    currentScreen = Screen.Login
                 }
             )
         }
 
         Screen.CountryList -> {
+            // Çift bilgilerini hazırla
+            val coupleInfo = coupleState.currentCouple?.let { couple ->
+                when {
+                    couple.isComplete -> "✅ Çift Tamamlandı!\nDavet Kodu: ${couple.inviteCode}"
+                    couple.needsPartner() -> "⏳ Eş Bekleniyor...\nDavet Kodu: ${couple.inviteCode}\n(Eşinizle paylaşın)"
+                    else -> "💕 Çift Aktif"
+                }
+            } ?: ""
+
             CountryListScreen(
                 viewModel = countryListViewModel,
                 onCountryClick = { countryCode ->
@@ -65,7 +123,13 @@ fun AppNavigation(
                         RecipeListEvent.LoadRecipes(countryCode)
                     )
                     currentScreen = Screen.RecipeList
-                }
+                },
+                onLogout = {
+                    authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                    coupleViewModel.clearCoupleData() // Couple data'sını temizle
+                    currentScreen = Screen.Login
+                },
+                coupleInfo = coupleInfo
             )
         }
 
@@ -123,11 +187,10 @@ fun AppNavigation(
 
             GenderSelectionScreen(
                 onGenderSelected = { gender ->
-                    // ÖNEMLI: Session oluşturmadan önce son bir kez daha waiting session kontrolü yap
-                    // Bu race condition'ı önler
                     if (isCoopMode) {
-                        // CoopMode'da son bir kontrol yap (suspend fonksiyon kullan)
+                        // CoopMode: Atomic session creation/join işlemi
                         scope.launch {
+                            // 1. Önce mevcut session kontrolü yap
                             val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
 
                             if (existingSession != null) {
@@ -138,14 +201,14 @@ fun AppNavigation(
                                         currentUserGender = gender
                                     )
                                 )
-                                currentScreen = Screen.CookingSession
                             } else {
-                                // Waiting session yok, yeni session oluştur
+                                // 2. Waiting session yok, atomic session creation dene
                                 val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
                                 val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
 
+                                // Atomic session creation/join - race condition önleyici
                                 cookingSessionViewModel.onEvent(
-                                    CookingSessionEvent.StartSession(
+                                    CookingSessionEvent.CreateOrJoinSession(
                                         recipeId = selectedRecipe,
                                         countryCode = selectedCountry,
                                         isCoopMode = isCoopMode,
@@ -155,8 +218,8 @@ fun AppNavigation(
                                         currentUserGender = gender
                                     )
                                 )
-                                currentScreen = Screen.CookingSession
                             }
+                            currentScreen = Screen.CookingSession
                         }
                     } else {
                         // Solo mode: Direkt yeni session oluştur

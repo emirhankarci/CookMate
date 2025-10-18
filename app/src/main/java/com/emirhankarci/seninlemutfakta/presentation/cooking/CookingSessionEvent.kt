@@ -14,6 +14,17 @@ sealed class CookingSessionEvent {
         val currentUserGender: Gender
     ) : CookingSessionEvent()
 
+    // Atomic session creation/join
+    data class CreateOrJoinSession(
+        val recipeId: String,
+        val countryCode: String,
+        val isCoopMode: Boolean,
+        val coupleId: String,
+        val femaleUserId: String,
+        val maleUserId: String,
+        val currentUserGender: Gender
+    ) : CookingSessionEvent()
+
     // Mevcut session'a katıl (genel)
     data class JoinSession(
         val sessionId: String,
