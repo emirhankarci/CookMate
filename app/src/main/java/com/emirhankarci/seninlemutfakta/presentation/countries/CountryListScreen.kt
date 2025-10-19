@@ -25,43 +25,21 @@ import com.emirhankarci.seninlemutfakta.data.model.Country
 fun CountryListScreen(
     viewModel: CountryListViewModel,
     onCountryClick: (String) -> Unit,
+    selectedFilter: String,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    var selectedFilter by remember { mutableStateOf("All Countries") }
 
-    // DEĞİŞİKLİK 1: Gradient Brush'ı buraya taşıdık.
-    val brush = remember {
-        Brush.linearGradient(
-            colors = listOf(
-                Color(0xFFFFB6C1), // Light pink
-                Color(0xFFFF69B4), // Hot pink
-                Color(0xFFFF6B6B)  // Coral
-            )
-        )
-    }
-
+    // DEĞİŞİKLİK 1: Bu Column artık SADECE ana içerik alanını temsil ediyor.
+    // Bu yüzden arka planını orijinal beyazımsı renge ayarlıyoruz.
     Column(
-        // DEĞİŞİKLİK 2: Arka plan gradient'ini direkt olarak ekranın en dış
-        // container'ına (Column) uyguluyoruz. Bu sayede status bar dahil tüm
-        // ekran bu gradient ile kaplanacak.
         modifier = modifier
             .fillMaxSize()
-            .background(brush)
+            .background(Color(0xFFFFF9F5))
     ) {
-        // Header with gradient
-        CountryListHeader(
-            selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it }
-        )
-
-        // Content
+        // İçerik alanı
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                // DEĞİŞİKLİK 3: Soruna neden olan beyaz arka planı buradan kaldırdık.
-                // Artık bu Box şeffaf olduğu için arkasındaki Column'un gradient'i görünecek.
-                .background(Color.Transparent),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -74,7 +52,8 @@ fun CountryListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Error: ${state.error}", color = Color.White) // Metin rengini görünür yapalım
+                        // Hata mesajının rengini daha koyu yapalım ki beyaz arka planda okunsun
+                        Text("Error: ${state.error}", color = Color.DarkGray)
                         Button(
                             onClick = { viewModel.onEvent(CountryListEvent.Retry) },
                             colors = ButtonDefaults.buttonColors(
@@ -89,10 +68,9 @@ fun CountryListScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        contentPadding = PaddingValues(all = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Filtrelenmiş ülke listesi
                         val filteredCountries = when (selectedFilter) {
                             "Unlocked" -> state.countries.filter { !state.isCountryLocked(it.countryCode) }
                             "Locked" -> state.countries.filter { state.isCountryLocked(it.countryCode) }
@@ -129,21 +107,27 @@ fun CountryListHeader(
     selectedFilter: String,
     onFilterChange: (String) -> Unit
 ) {
-    // Gradient colors
-    val gradientColors = listOf(
-        Color(0xFFFFB6C1),
-        Color(0xFFFF69B4),
-        Color(0xFFFF6B6B)
-    )
+    // DEĞİŞİKLİK 2: Gradient fırçasını (Brush) doğrudan Header'ın içine taşıdık.
+    // Hatırladığım renkler bunlardı.
+    val brush = remember {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFFFB6C1), // Light pink
+                Color(0xFFFF69B4), // Hot pink
+                Color(0xFFFF6B6B)  // Coral
+            )
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // DEĞİŞİKLİK 3: Mavi arka planı kaldırıp yerine pembe gradient'i uyguluyoruz.
+            .background(brush)
             .statusBarsPadding()
             .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Title
         Text(
             text = "Choose Your Journey",
             fontSize = 28.sp,
@@ -155,7 +139,6 @@ fun CountryListHeader(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Subtitle
         Text(
             text = "Explore authentic recipes from around the world",
             fontSize = 14.sp,
@@ -165,7 +148,6 @@ fun CountryListHeader(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Filter chips
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
