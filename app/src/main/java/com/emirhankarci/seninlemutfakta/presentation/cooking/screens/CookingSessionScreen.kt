@@ -2,99 +2,74 @@ package com.emirhankarci.seninlemutfakta.presentation.cooking.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.data.model.SessionStatus
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionEvent
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionState
 import com.emirhankarci.seninlemutfakta.presentation.cooking.PartnerConnectionStatus
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CookingSessionScreen(
     state: CookingSessionState,
     onEvent: (CookingSessionEvent) -> Unit,
     onBack: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "Adım ${(state.session?.currentStep ?: 0) + 1} / ${state.session?.totalSteps ?: 0}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("← Çık")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            state.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFFFF69B4)
                 )
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+            }
 
-                state.error != null -> {
-                    ErrorScreen(
-                        error = state.error,
-                        onRetry = { onEvent(CookingSessionEvent.ClearError) }
-                    )
-                }
+            state.error != null -> {
+                ErrorScreen(
+                    error = state.error,
+                    onRetry = { onEvent(CookingSessionEvent.ClearError) },
+                    onBack = onBack
+                )
+            }
 
-                state.session == null -> {
-                    Text(
-                        text = "Session yükleniyor...",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+            state.session == null -> {
+                LoadingContent(message = "Session yükleniyor...")
+            }
 
-                state.session.status == SessionStatus.WAITING -> {
-                    WaitingForPartnerContent(
-                        recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
-                        onBack = onBack
-                    )
-                }
+            state.session.status == SessionStatus.WAITING -> {
+                WaitingForPartnerContent(
+                    recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
+                    onBack = onBack
+                )
+            }
 
-                state.currentStep == null -> {
-                    Text(
-                        text = "Tarif yükleniyor...",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+            state.currentStep == null -> {
+                LoadingContent(message = "Tarif yükleniyor...")
+            }
 
-                else -> {
-                    CookingContent(
-                        state = state,
-                        onEvent = onEvent
-                    )
-                }
+            else -> {
+                CookingContent(
+                    state = state,
+                    onEvent = onEvent,
+                    onBack = onBack
+                )
             }
         }
     }
@@ -111,105 +86,173 @@ fun CookingSessionScreen(
 @Composable
 fun CookingContent(
     state: CookingSessionState,
-    onEvent: (CookingSessionEvent) -> Unit
+    onEvent: (CookingSessionEvent) -> Unit,
+    onBack: () -> Unit
 ) {
+    val gradientColors = listOf(
+        Color(0xFFFFB6C1),
+        Color(0xFFFF69B4),
+        Color(0xFFFF6B6B)
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(Color(0xFFFFF9F5))
     ) {
-        // Connection Warning
-        if (!state.isConnected) {
-            ConnectionWarningCard()
-        }
-
-        // Partner Disconnected Warning
-        if (state.session?.isCoopMode == true &&
-            state.partnerConnectionStatus == PartnerConnectionStatus.DISCONNECTED) {
-            PartnerDisconnectedCard()
-        }
-
-        // Progress Bar
-        ProgressSection(
-            progress = state.getProgressPercentage(),
+        // Top Status Bar with Gradient
+        TopStatusBar(
+            recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
             currentStep = (state.session?.currentStep ?: 0) + 1,
-            totalSteps = state.session?.totalSteps ?: 0
+            totalSteps = state.session?.totalSteps ?: 0,
+            gradientColors = gradientColors,
+            onBack = onBack
         )
 
-        // Partner Status (Coop Mode'da)
-        if (state.session?.isCoopMode == true) {
-            PartnerStatusCard(
-                partnerStatus = state.partnerConnectionStatus,
-                isPartnerWaiting = state.isPartnerWaiting(),
-                isPartnerCompleted = state.isPartnerStepCompleted(),
-                statusMessage = state.getPartnerStatusMessage()
+        // Progress Indicator
+        ProgressIndicator(
+            progress = state.getProgressPercentage()
+        )
+
+        // Main scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Connection Warnings
+            if (!state.isConnected) {
+                ConnectionWarningBanner()
+            }
+
+            if (state.session?.isCoopMode == true &&
+                state.partnerConnectionStatus == PartnerConnectionStatus.DISCONNECTED) {
+                PartnerDisconnectedBanner()
+            }
+
+            // Partner Status Card (Compact, Floating Design)
+            if (state.session?.isCoopMode == true) {
+                PartnerStatusCompactCard(
+                    partnerStatus = state.partnerConnectionStatus,
+                    isPartnerWaiting = state.isPartnerWaiting(),
+                    isPartnerCompleted = state.isPartnerStepCompleted(),
+                    statusMessage = state.getPartnerStatusMessage()
+                )
+            }
+
+            // Current Step Card (Main Premium Card)
+            PremiumStepCard(
+                step = state.currentStep!!,
+                stepNumber = (state.session?.currentStep ?: 0) + 1,
+                totalSteps = state.session?.totalSteps ?: 0,
+                isCoopMode = state.session?.isCoopMode ?: false,
+                currentUserGender = state.currentUserGender
             )
+
+            // Sync Status Visual (Coop Mode)
+            if (state.session?.isCoopMode == true) {
+                SyncStatusVisual(
+                    myCompleted = state.isMyStepCompleted(),
+                    partnerCompleted = state.isPartnerStepCompleted(),
+                    currentUserGender = state.currentUserGender
+                )
+            }
+
+            // Action Buttons
+            ActionButtons(
+                isMyStepCompleted = state.isMyStepCompleted(),
+                isWaiting = state.amIWaiting(),
+                canProceed = state.canProceedToNextStep(),
+                isCoopMode = state.session?.isCoopMode ?: false,
+                onComplete = { onEvent(CookingSessionEvent.CompleteCurrentStep) }
+            )
+
+            // Bottom spacing for safe area
+            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        // Current Step Card
-        CurrentStepCard(
-            step = state.currentStep!!,
-            stepNumber = (state.session?.currentStep ?: 0) + 1,
-            isCoopMode = state.session?.isCoopMode ?: false,  // ← EKLE
-            currentUserGender = state.currentUserGender  // ← EKLE
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // My Status
-        MyStatusCard(
-            isCompleted = state.isMyStepCompleted(),
-            isWaiting = state.amIWaiting()
-        )
-
-        // Complete Button
-        CompleteStepButton(
-            isCompleted = state.isMyStepCompleted(),
-            isWaiting = state.amIWaiting(),
-            canProceed = state.canProceedToNextStep(),
-            onClick = { onEvent(CookingSessionEvent.CompleteCurrentStep) }
-        )
     }
 }
 
 @Composable
-fun ProgressSection(
-    progress: Int,
+fun TopStatusBar(
+    recipeName: String,
     currentStep: Int,
-    totalSteps: Int
+    totalSteps: Int,
+    gradientColors: List<Color>,
+    onBack: () -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = gradientColors,
+                    start = Offset(0f, 0f),
+                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                )
+            )
+            .padding(top = 48.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "İlerleme",
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = "%$progress",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+            // Left: Back button
+            IconButton(
+                onClick = onBack,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
-        LinearProgressIndicator(
-            progress = progress / 100f,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
+            // Center: Recipe name and step
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = recipeName,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1
+                )
+                Text(
+                    text = "Step $currentStep of $totalSteps",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+
+            // Right: Menu/options (placeholder)
+            Box(modifier = Modifier.size(48.dp))
+        }
     }
 }
 
 @Composable
-fun PartnerStatusCard(
+fun ProgressIndicator(progress: Int) {
+    LinearProgressIndicator(
+        progress = { progress / 100f },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(4.dp),
+        color = Color(0xFFFF69B4),
+        trackColor = Color(0xFFE0E0E0),
+    )
+}
+
+@Composable
+fun PartnerStatusCompactCard(
     partnerStatus: PartnerConnectionStatus,
     isPartnerWaiting: Boolean,
     isPartnerCompleted: Boolean,
@@ -219,128 +262,198 @@ fun PartnerStatusCard(
         partnerStatus != PartnerConnectionStatus.ONLINE -> Color(0xFFFFEBEE)
         isPartnerCompleted -> Color(0xFFE8F5E9)
         isPartnerWaiting -> Color(0xFFFFF9C4)
-        else -> Color(0xFFE3F2FD)
+        else -> Color.White
     }
 
-    val icon = when {
-        partnerStatus != PartnerConnectionStatus.ONLINE -> "⚠️"
+    val statusIcon = when {
+        partnerStatus != PartnerConnectionStatus.ONLINE -> "🔴"
         isPartnerCompleted -> "✅"
         isPartnerWaiting -> "⏳"
-        else -> "👨‍🍳"
+        else -> "🟢"
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = icon,
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Column {
+            Text(text = "👨‍🍳", fontSize = 28.sp)
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Eşiniz",
-                    style = MaterialTheme.typography.labelMedium
+                    text = "Partner",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF95A5A6)
                 )
                 Text(
                     text = statusMessage,
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2C3E50)
                 )
             }
+            Text(text = statusIcon, fontSize = 20.sp)
         }
     }
 }
 
 @Composable
-fun CurrentStepCard(
+fun PremiumStepCard(
     step: com.emirhankarci.seninlemutfakta.data.model.RecipeStep,
     stepNumber: Int,
-    isCoopMode: Boolean = false,
-    currentUserGender: Gender? = null
+    totalSteps: Int,
+    isCoopMode: Boolean,
+    currentUserGender: Gender?
 ) {
+    val isFinalStep = stepNumber == totalSteps
+
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Step Number
-            Text(
-                text = "Adım $stepNumber",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+            // Image/Illustration Placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFFFE8F0),
+                                Color(0xFFFFD0E0)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🍳",
+                    fontSize = 64.sp
+                )
+            }
 
-            // Coop Mode'da görev göstergesi
-            if (isCoopMode && currentUserGender != null) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            // Step Number Badge
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = if (isFinalStep) Color(0xFF4CAF50) else Color(0xFFFF69B4),
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Text(
-                        text = if (currentUserGender == Gender.FEMALE) "👩‍🍳" else "👨‍🍳",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "Sizin Göreviniz",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (isFinalStep) "🎉" else "$stepNumber",
+                            fontSize = if (isFinalStep) 20.sp else 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
-                Divider()
+
+                Column {
+                    Text(
+                        text = if (isFinalStep) "Final Step!" else "Step $stepNumber",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2C3E50)
+                    )
+
+                    // Coop mode indicator
+                    if (isCoopMode && currentUserGender != null) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (currentUserGender == Gender.FEMALE) "👩‍🍳" else "👨‍🍳",
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Your Task",
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF69B4),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
 
             // Step Description
             Text(
                 text = step.description,
-                style = MaterialTheme.typography.titleLarge
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF2C3E50),
+                lineHeight = 26.sp
             )
 
-            // Estimated Time
+            // Step Details
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "⏱️",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "${step.estimatedTime} dakika",
-                    style = MaterialTheme.typography.bodyMedium
+                StepDetailBadge(
+                    icon = "⏱️",
+                    text = "~${step.estimatedTime} min"
                 )
             }
 
-            // Tips
+            // Tips Section (if available)
             if (step.tips.isNotEmpty()) {
-                Divider()
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF8F9FA)
                 ) {
-                    Text(
-                        text = "💡",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = step.tips,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(text = "💡", fontSize = 18.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Tip",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2C3E50)
+                            )
+                            Text(
+                                text = step.tips,
+                                fontSize = 13.sp,
+                                color = Color(0xFF95A5A6),
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -348,97 +461,383 @@ fun CurrentStepCard(
 }
 
 @Composable
-fun MyStatusCard(
-    isCompleted: Boolean,
-    isWaiting: Boolean
-) {
-    val backgroundColor = when {
-        isCompleted && isWaiting -> Color(0xFFFFF9C4)
-        isCompleted -> Color(0xFFE8F5E9)
-        else -> Color(0xFFE3F2FD)
-    }
-
-    val statusText = when {
-        isCompleted && isWaiting -> "✅ Tamamlandı - Eşinizi bekliyorsunuz"
-        isCompleted -> "✅ Bu adımı tamamladınız"
-        else -> "👨‍🍳 Adımı tamamlayın"
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        )
+fun StepDetailBadge(icon: String, text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(text = icon, fontSize = 14.sp)
         Text(
-            text = statusText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            text = text,
+            fontSize = 13.sp,
+            color = Color(0xFF95A5A6)
         )
     }
 }
 
 @Composable
-fun CompleteStepButton(
+fun SyncStatusVisual(
+    myCompleted: Boolean,
+    partnerCompleted: Boolean,
+    currentUserGender: Gender?
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // My Progress
+            SyncProfileRing(
+                emoji = if (currentUserGender == Gender.FEMALE) "👩‍🍳" else "👨‍🍳",
+                label = "You",
+                isCompleted = myCompleted
+            )
+
+            // Connector
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(2.dp)
+                    .background(
+                        if (myCompleted && partnerCompleted) Color(0xFF4CAF50)
+                        else Color(0xFFE0E0E0)
+                    )
+            )
+
+            // Partner Progress
+            SyncProfileRing(
+                emoji = if (currentUserGender == Gender.FEMALE) "👨‍🍳" else "👩‍🍳",
+                label = "Partner",
+                isCompleted = partnerCompleted
+            )
+        }
+    }
+}
+
+@Composable
+fun SyncProfileRing(
+    emoji: String,
+    label: String,
+    isCompleted: Boolean
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .background(
+                    color = when {
+                        isCompleted -> Color(0xFF4CAF50).copy(alpha = 0.15f)
+                        else -> Color(0xFFE0E0E0).copy(alpha = 0.5f)
+                    },
+                    shape = CircleShape
+                )
+                .clip(CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = emoji, fontSize = 28.sp)
+            if (isCompleted) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .align(Alignment.BottomEnd)
+                        .background(Color(0xFF4CAF50), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✓",
+                        fontSize = 12.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = if (isCompleted) FontWeight.Bold else FontWeight.Normal,
+            color = if (isCompleted) Color(0xFF4CAF50) else Color(0xFF95A5A6)
+        )
+    }
+}
+
+@Composable
+fun ActionButtons(
+    isMyStepCompleted: Boolean,
+    isWaiting: Boolean,
+    canProceed: Boolean,
+    isCoopMode: Boolean,
+    onComplete: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Primary Action Button
+        PrimaryActionButton(
+            isCompleted = isMyStepCompleted,
+            isWaiting = isWaiting,
+            canProceed = canProceed,
+            isCoopMode = isCoopMode,
+            onClick = onComplete
+        )
+
+        // Secondary Actions Row (Optional - for future enhancements)
+        // SecondaryActionsRow()
+    }
+}
+
+@Composable
+fun PrimaryActionButton(
     isCompleted: Boolean,
     isWaiting: Boolean,
     canProceed: Boolean,
+    isCoopMode: Boolean,
     onClick: () -> Unit
 ) {
+    val buttonText = when {
+        isWaiting -> "Waiting for Partner..."
+        canProceed -> "Next Step →"
+        isCompleted -> "Completed ✓"
+        else -> "Complete Step"
+    }
+
+    val buttonColor = when {
+        canProceed -> Color(0xFF4CAF50)
+        isCompleted -> Color(0xFFE0E0E0)
+        else -> Color.Transparent
+    }
+
+    val textColor = when {
+        isCompleted && !canProceed -> Color(0xFF757575)
+        else -> Color.White
+    }
+
     Button(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp),
-        enabled = !isCompleted,
+            .height(60.dp),
+        enabled = !isCompleted || canProceed,
+        shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isCompleted) Color.Gray else MaterialTheme.colorScheme.primary
+            containerColor = buttonColor,
+            disabledContainerColor = Color(0xFFF5F5F5)
+        ),
+        contentPadding = PaddingValues(0.dp),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = if (canProceed) 8.dp else 4.dp
         )
     ) {
-        Text(
-            text = when {
-                isWaiting -> "Eşinizi bekliyorsunuz... ⏳"
-                isCompleted -> "Tamamlandı ✅"
-                else -> "Adımı Tamamla"
-            },
-            style = MaterialTheme.typography.titleMedium
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (!isCompleted && !canProceed) {
+                        Modifier.background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFFFB6C1),
+                                    Color(0xFFFF69B4),
+                                    Color(0xFFFF6B6B)
+                                )
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                    } else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isWaiting) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color(0xFF757575),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = buttonText,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF757575)
+                    )
+                }
+            } else {
+                Text(
+                    text = buttonText,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ConnectionWarningBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFA726)
         )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = "⚠️", fontSize = 20.sp)
+            Column {
+                Text(
+                    text = "Connection Lost",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Check your internet connection",
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PartnerDisconnectedBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFB74D)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = "⏸️", fontSize = 20.sp)
+            Column {
+                Text(
+                    text = "Partner Disconnected",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Waiting for reconnection...",
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun ErrorScreen(
     error: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onBack: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFFFF9F5))
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "❌",
-            style = MaterialTheme.typography.displayLarge
-        )
+        Text(text = "❌", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Bir hata oluştu",
-            style = MaterialTheme.typography.titleLarge
+            text = "Something Went Wrong",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2C3E50)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = error,
-            style = MaterialTheme.typography.bodyMedium,
+            fontSize = 14.sp,
+            color = Color(0xFF95A5A6),
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onRetry) {
-            Text("Tekrar Dene")
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFF69B4)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(
+                text = "Retry",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onBack,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text("Go Back")
+        }
+    }
+}
+
+@Composable
+fun LoadingContent(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF9F5)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(color = Color(0xFFFF69B4))
+            Text(
+                text = message,
+                fontSize = 16.sp,
+                color = Color(0xFF95A5A6)
+            )
         }
     }
 }
@@ -450,22 +849,27 @@ fun CompletionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        containerColor = Color(0xFFFFF9F5),
         icon = {
-            Text(
-                text = "🎉",
-                style = MaterialTheme.typography.displayMedium
-            )
+            Text(text = "🎉", fontSize = 64.sp)
         },
         title = {
             Text(
-                text = "Tebrikler!",
+                text = "Congratulations!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2C3E50),
                 textAlign = TextAlign.Center
             )
         },
         text = {
             Text(
-                text = "Tarifi başarıyla tamamladınız!\nAfiyet olsun! 😋",
-                textAlign = TextAlign.Center
+                text = "You've successfully completed the recipe!\nEnjoy your meal! 😋",
+                fontSize = 14.sp,
+                color = Color(0xFF95A5A6),
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
             )
         },
         confirmButton = {
@@ -473,85 +877,49 @@ fun CompletionDialog(
                 onClick = {
                     onDismiss()
                     onBackToRecipes()
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                ),
+                contentPadding = PaddingValues(0.dp),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             ) {
-                Text("Tariflere Dön")
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFFFB6C1),
+                                    Color(0xFFFF69B4),
+                                    Color(0xFFFF6B6B)
+                                )
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Back to Recipes",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Kapat")
+                Text(
+                    text = "Close",
+                    color = Color(0xFF95A5A6)
+                )
             }
         }
     )
-}
-
-@Composable
-fun ConnectionWarningCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "⚠️",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Column {
-                Text(
-                    text = "Bağlantı Kesildi",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-                Text(
-                    text = "İnternet bağlantınızı kontrol edin",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PartnerDisconnectedCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "⏸️",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Column {
-                Text(
-                    text = "Eşiniz Bağlantısını Kaybetti",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "30 saniyedir çevrimdışı. Lütfen bekleyin.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -562,21 +930,19 @@ fun WaitingForPartnerContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFFFF9F5))
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Animasyonlu emoji
-        Text(
-            text = "⏳",
-            style = MaterialTheme.typography.displayLarge
-        )
-
+        Text(text = "⏳", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Eşinizi Bekliyorsunuz",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Waiting for Partner",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2C3E50),
             textAlign = TextAlign.Center
         )
 
@@ -584,47 +950,66 @@ fun WaitingForPartnerContent(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 8.dp
             )
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = recipeName,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFE8F0)
+                ) {
+                    Text(
+                        text = recipeName,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFF69B4),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
 
-                Divider()
-
                 Text(
-                    text = "Eşiniz uygulamayı açtığında size bildirim gelecek ve birlikte tarifinizi yapmaya başlayabileceksiniz.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    text = "Your partner will be notified. You can start cooking together once they join!",
+                    fontSize = 14.sp,
+                    color = Color(0xFF95A5A6),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
                 )
 
                 CircularProgressIndicator(
                     modifier = Modifier
                         .padding(top = 16.dp)
-                        .size(48.dp)
+                        .size(48.dp),
+                    color = Color(0xFFFF69B4)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
+        OutlinedButton(
             onClick = onBack,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text("İptal Et ve Geri Dön")
+            Text(
+                text = "Cancel & Go Back",
+                fontSize = 16.sp,
+                color = Color(0xFF757575)
+            )
         }
     }
 }
