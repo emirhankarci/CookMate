@@ -48,7 +48,7 @@ fun RegisterScreen(
     var confirmPasswordVisible by rememberSaveable { mutableStateOf(false) }
     var agreeToTerms by remember { mutableStateOf(false) }
 
-    // Geri tuşu ile LoginScreen'e dön
+    // Handle back button - go to login
     BackHandler {
         onNavigateToLogin()
     }

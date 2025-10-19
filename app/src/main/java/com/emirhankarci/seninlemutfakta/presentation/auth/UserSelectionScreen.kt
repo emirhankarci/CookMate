@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.emirhankarci.seninlemutfakta.R
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 
@@ -28,6 +29,10 @@ fun UserSelectionScreen(
     onGenderSelected: (Gender) -> Unit,
     onLogout: () -> Unit
 ) {
+    // Disable back button
+    BackHandler(enabled = true) {
+        // Do nothing - back button is disabled
+    }
     // Gradient colors
     val gradientColors = listOf(
         Color(0xFFFFB6C1), // Light Pink

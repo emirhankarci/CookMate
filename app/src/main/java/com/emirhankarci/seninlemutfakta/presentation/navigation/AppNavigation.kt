@@ -1,5 +1,6 @@
 package com.emirhankarci.seninlemutfakta.presentation.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.emirhankarci.seninlemutfakta.data.model.Gender
+import com.emirhankarci.seninlemutfakta.data.model.SessionStatus
 import com.emirhankarci.seninlemutfakta.presentation.MainScaffold
 import com.emirhankarci.seninlemutfakta.presentation.auth.AuthViewModel
 import com.emirhankarci.seninlemutfakta.presentation.auth.LoginScreen
@@ -72,7 +74,10 @@ fun AppNavigation(
 
     LaunchedEffect(coupleId, currentUserGender) {
         if (coupleId.isNotEmpty() && currentUserGender != null) {
-            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId)
+            // Clean up old sessions first
+            cookingSessionViewModel.cleanUpOldSessions(coupleId)
+            // Then start observing
+            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
         }
     }
 
@@ -82,9 +87,28 @@ fun AppNavigation(
         }
     }
 
+    // Navigate to CookingSession when session status becomes IN_PROGRESS
+    LaunchedEffect(cookingState.session?.status, cookingState.recipe) {
+        val session = cookingState.session
+        val recipe = cookingState.recipe
+        // Only navigate when we have both session and recipe loaded
+        if (session != null &&
+            recipe != null &&
+            session.status == SessionStatus.IN_PROGRESS &&
+            currentScreen != Screen.CookingSession &&
+            cookingState.isCreatorWaitingForPartner) {
+            currentScreen = Screen.CookingSession
+        }
+    }
+
     when (currentScreen) {
         Screen.CountryList -> {
             var selectedFilter by remember { mutableStateOf("All Countries") }
+
+            // Handle back button - go to user selection
+            BackHandler {
+                currentScreen = Screen.UserSelection
+            }
 
             MainScaffold(
                 currentScreen = currentScreen,
@@ -115,6 +139,11 @@ fun AppNavigation(
             val recipeState by recipeListViewModel.state.collectAsState()
             // DEĞİŞİKLİK 1: 'selectedFilter' state'ini buraya taşıdık.
             var selectedFilter by remember { mutableStateOf(RecipeFilter.ALL) }
+
+            // Handle back button - go to country list
+            BackHandler {
+                currentScreen = Screen.CountryList
+            }
 
             MainScaffold(
                 currentScreen = currentScreen,
@@ -150,6 +179,11 @@ fun AppNavigation(
         }
 
         Screen.Profile -> {
+            // Handle back button - go to country list
+            BackHandler {
+                currentScreen = Screen.CountryList
+            }
+
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
@@ -193,7 +227,8 @@ fun AppNavigation(
                     state = authState,
                     onEvent = authViewModel::onEvent,
                     onNavigateToRegister = { currentScreen = Screen.Register },
-                    onLoginSuccess = { currentScreen = Screen.UserSelection }
+                    onLoginSuccess = { currentScreen = Screen.UserSelection },
+                    onBackToWelcome = { currentScreen = Screen.Welcome }
                 )
             }
         }
@@ -238,6 +273,12 @@ fun AppNavigation(
 
         Screen.CoopModeSelection -> {
             val scope = rememberCoroutineScope()
+
+            // Handle back button - go to recipe list
+            BackHandler {
+                currentScreen = Screen.RecipeList
+            }
+
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
@@ -294,13 +335,16 @@ fun AppNavigation(
                                 val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
 
                                 if (existingSession != null) {
+                                    // Joining existing session - navigate immediately
                                     cookingSessionViewModel.onEvent(
                                         CookingSessionEvent.JoinWaitingSession(
                                             sessionId = existingSession.sessionId,
                                             currentUserGender = gender
                                         )
                                     )
+                                    currentScreen = Screen.CookingSession
                                 } else {
+                                    // Creating new session - don't navigate yet, wait for partner
                                     val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
                                     val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
 
@@ -315,8 +359,8 @@ fun AppNavigation(
                                             currentUserGender = gender
                                         )
                                     )
+                                    // Navigation will happen automatically via LaunchedEffect when partner joins
                                 }
-                                currentScreen = Screen.CookingSession
                             }
                         }
                     }
@@ -325,6 +369,30 @@ fun AppNavigation(
         }
 
         Screen.CookingSession -> {
+            var showExitConfirmation by remember { mutableStateOf(false) }
+
+            // Handle back button - show confirmation
+            BackHandler {
+                showExitConfirmation = true
+            }
+
+            // Exit confirmation dialog
+            if (showExitConfirmation) {
+                com.emirhankarci.seninlemutfakta.presentation.components.ConfirmationDialog(
+                    title = "Emin Misiniz?",
+                    message = "Pişirme oturumundan çıkmak istediğinize emin misiniz? Kaydedilmemiş ilerlemeniz kaybolabilir.",
+                    confirmText = "Evet, Çık",
+                    dismissText = "İptal",
+                    onConfirm = {
+                        showExitConfirmation = false
+                        currentScreen = Screen.RecipeList
+                    },
+                    onDismiss = {
+                        showExitConfirmation = false
+                    }
+                )
+            }
+
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
@@ -350,12 +418,13 @@ fun AppNavigation(
         }
     }
 
+    // Show dialog for partner who needs to join
     if (cookingState.showWaitingForPartnerDialog && currentScreen != Screen.CookingSession) {
         WaitingForPartnerDialog(
             recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
             partnerName = "Eşiniz",
             onCancel = {
-                cookingSessionViewModel.onEvent(CookingSessionEvent.DismissWaitingDialog)
+                cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
             },
             onJoin = {
                 val session = cookingState.session
@@ -374,6 +443,16 @@ fun AppNavigation(
                     )
                     currentScreen = Screen.CookingSession
                 }
+            }
+        )
+    }
+
+    // Show dialog for creator who is waiting for partner
+    if (cookingState.isCreatorWaitingForPartner && currentScreen != Screen.CookingSession) {
+        com.emirhankarci.seninlemutfakta.presentation.cooking.components.CreatorWaitingDialog(
+            recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
+            onCancel = {
+                cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
             }
         )
     }

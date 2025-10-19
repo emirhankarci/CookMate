@@ -24,11 +24,9 @@ import androidx.compose.ui.window.DialogProperties
 import com.emirhankarci.seninlemutfakta.presentation.components.ConfirmationDialog
 
 @Composable
-fun WaitingForPartnerDialog(
+fun CreatorWaitingDialog(
     recipeName: String,
-    partnerName: String = "Eşiniz",
-    onCancel: () -> Unit,
-    onJoin: () -> Unit
+    onCancel: () -> Unit
 ) {
     // Confirmation dialog state
     var showCancelConfirmation by remember { mutableStateOf(false) }
@@ -92,15 +90,15 @@ fun WaitingForPartnerDialog(
         label = "icon_pulse"
     )
 
-    // Button pulse animation
-    val buttonPulse by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.03f,
+    // Rotating animation for waiting indicator
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "button_pulse"
+        label = "loading_rotation"
     )
 
     Dialog(
@@ -141,16 +139,16 @@ fun WaitingForPartnerDialog(
                     // Badge
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFFF6B6B)
+                        color = Color(0xFF9C27B0)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "🔔", fontSize = 14.sp)
+                            Text(text = "⏳", fontSize = 14.sp)
                             Text(
-                                text = "New Invitation",
+                                text = "Waiting",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -166,8 +164,8 @@ fun WaitingForPartnerDialog(
                             .background(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        Color(0xFFFFE8F0),
-                                        Color(0xFFFFD0E0).copy(alpha = 0.5f),
+                                        Color(0xFFE1BEE7),
+                                        Color(0xFFCE93D8).copy(alpha = 0.5f),
                                         Color.Transparent
                                     ),
                                     center = Offset(50.dp.value, 50.dp.value),
@@ -183,7 +181,7 @@ fun WaitingForPartnerDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(text = "👨‍🍳", fontSize = 36.sp)
-                            Text(text = "✨", fontSize = 24.sp)
+                            Text(text = "⏳", fontSize = 24.sp)
                         }
                     }
 
@@ -191,70 +189,13 @@ fun WaitingForPartnerDialog(
 
                     // Title
                     Text(
-                        text = "Your Partner Is Waiting! 💕",
+                        text = "Waiting for Partner... 💜",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C3E50),
                         textAlign = TextAlign.Center,
                         lineHeight = 34.sp
                     )
-
-                    // Partner Info Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFF0F5)
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 2.dp
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Partner avatar
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        color = Color(0xFFFFE8F0),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "👨‍🍳", fontSize = 28.sp)
-                            }
-
-                            // Partner details
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = partnerName,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2C3E50)
-                                )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = "🟢", fontSize = 10.sp)
-                                    Text(
-                                        text = "Online · Cooking",
-                                        fontSize = 13.sp,
-                                        color = Color(0xFF95A5A6)
-                                    )
-                                }
-                            }
-                        }
-                    }
 
                     // Recipe Details
                     Column(
@@ -265,7 +206,7 @@ fun WaitingForPartnerDialog(
                         // Recipe name with emoji
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFE8F0)
+                            color = Color(0xFFE1BEE7)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -277,7 +218,7 @@ fun WaitingForPartnerDialog(
                                     text = recipeName,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFFFF69B4)
+                                    color = Color(0xFF9C27B0)
                                 )
                             }
                         }
@@ -291,79 +232,49 @@ fun WaitingForPartnerDialog(
 
                     // Description
                     Text(
-                        text = "Your partner has started cooking and needs you! Join now to cook together.",
+                        text = "Your invitation has been sent! Your partner will be notified and can join you soon.",
                         fontSize = 15.sp,
                         color = Color(0xFF5F6368),
                         textAlign = TextAlign.Center,
                         lineHeight = 22.sp
                     )
 
-                    // Time indicator
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "⏱️", fontSize = 14.sp)
-                        Text(
-                            text = "Just started cooking",
-                            fontSize = 13.sp,
-                            color = Color(0xFF95A5A6)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Primary Button - Join
-                    Button(
-                        onClick = {
-                            visible = false
-                            onJoin()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .scale(buttonPulse),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent
+                    // Waiting indicator
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF3E5F5)
                         ),
-                        contentPadding = PaddingValues(0.dp),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 12.dp,
-                            pressedElevation = 6.dp
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 2.dp
                         )
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0xFFFFB6C1),
-                                            Color(0xFFFF69B4),
-                                            Color(0xFFFF6B6B)
-                                        )
-                                    ),
-                                    shape = RoundedCornerShape(20.dp)
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "🚀", fontSize = 22.sp)
+                                Text(text = "⏰", fontSize = 16.sp)
                                 Text(
-                                    text = "Join & Start Cooking!",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    text = "Waiting for partner to join...",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF9C27B0),
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
                     }
 
-                    // Secondary Button - Maybe Later
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Cancel Button
                     OutlinedButton(
                         onClick = {
                             visible = false
@@ -388,7 +299,7 @@ fun WaitingForPartnerDialog(
                         )
                     ) {
                         Text(
-                            text = "Maybe Later",
+                            text = "Cancel Waiting",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -396,7 +307,7 @@ fun WaitingForPartnerDialog(
 
                     // Subtle hint
                     Text(
-                        text = "They're counting on you! 💪",
+                        text = "Your partner will get a notification 📱",
                         fontSize = 12.sp,
                         color = Color(0xFFBDBDBD),
                         textAlign = TextAlign.Center

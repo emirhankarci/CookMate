@@ -1,5 +1,6 @@
 package com.emirhankarci.seninlemutfakta.data.model
 
+import com.google.firebase.database.Exclude
 import com.google.firebase.database.PropertyName
 
 data class CookingSession(
@@ -20,12 +21,17 @@ data class CookingSession(
     val startedAt: Long = System.currentTimeMillis(),
     val lastUpdated: Long = System.currentTimeMillis(),
     val femaleProgress: StepProgress = StepProgress(),
-    val maleProgress: StepProgress = StepProgress()
+    val maleProgress: StepProgress = StepProgress(),
+
+    // Firebase computed field - ignore during deserialization
+    @get:PropertyName("sessionActive")
+    @set:PropertyName("sessionActive")
+    var sessionActive: Boolean = false
 ) {
     constructor() : this(
         "", "", "", "", false, "", "", 0, 0,
         SessionStatus.WAITING, System.currentTimeMillis(),
-        System.currentTimeMillis(), StepProgress(), StepProgress()
+        System.currentTimeMillis(), StepProgress(), StepProgress(), false
     )
 
     // Helper functions

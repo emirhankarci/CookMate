@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.emirhankarci.seninlemutfakta.R
 
 @Composable
@@ -35,12 +36,18 @@ fun LoginScreen(
     state: AuthState,
     onEvent: (AuthEvent) -> Unit,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onBackToWelcome: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+
+    // Handle back button - go to welcome
+    BackHandler {
+        onBackToWelcome()
+    }
 
     // Login başarılı olduğunda navigation yap
     LaunchedEffect(state.isLoginSuccessful) {

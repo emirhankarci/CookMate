@@ -368,6 +368,55 @@ class CookingSessionRepository @Inject constructor(
         }
     }
 
+    // Cancel/delete waiting session
+    suspend fun cancelWaitingSession(sessionId: String): Result<Unit> {
+        return try {
+            firebaseDataSource.getCookingSessionsRef()
+                .child(sessionId)
+                .updateChildren(mapOf("status" to SessionStatus.CANCELLED.name))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Delete session completely
+    suspend fun deleteSession(sessionId: String): Result<Unit> {
+        return try {
+            firebaseDataSource.getCookingSessionsRef()
+                .child(sessionId)
+                .removeValue()
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Clean up old sessions for a couple (cancelled or completed)
+    suspend fun cleanUpOldSessionsForCouple(accountId: String): Result<Unit> {
+        return try {
+            val snapshot = firebaseDataSource.getCookingSessionsRef()
+                .get()
+                .await()
+
+            snapshot.children.forEach { child ->
+                val session = child.getValue(CookingSession::class.java)
+                if (session != null &&
+                    session.accountId == accountId &&
+                    (session.status == SessionStatus.CANCELLED ||
+                     session.status == SessionStatus.COMPLETED)) {
+                    child.ref.removeValue().await()
+                }
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ==================== CONNECTION MONITORING ====================
 
     fun observeConnectionStatus(): Flow<Boolean> = callbackFlow {

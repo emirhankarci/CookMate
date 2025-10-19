@@ -76,6 +76,10 @@ class CookingSessionViewModel @Inject constructor(
             is CookingSessionEvent.DismissWaitingDialog -> dismissWaitingDialog()
             is CookingSessionEvent.DismissCompletionDialog -> dismissCompletionDialog()
 
+            // Session management
+            is CookingSessionEvent.CancelWaitingSession -> cancelWaitingSession()
+            is CookingSessionEvent.CleanUpOldSessions -> cleanUpOldSessions(event.accountId)
+
             is CookingSessionEvent.ClearError -> clearError()
         }
     }
@@ -190,7 +194,22 @@ class CookingSessionViewModel @Inject constructor(
             // Önce tarifi yükle
             firebaseRepository.getRecipe(countryCode, recipeId)
                 .onSuccess { recipe ->
-                    val totalSteps = recipe?.steps?.size ?: 0
+                    if (recipe == null) {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Tarif bulunamadı"
+                            )
+                        }
+                        return@launch
+                    }
+
+                    // Total steps: Coop mode'da female/male steps, solo'da normal steps
+                    val totalSteps = if (isCoopMode) {
+                        maxOf(recipe.femaleSteps.size, recipe.maleSteps.size)
+                    } else {
+                        recipe.steps.size
+                    }
 
                     // Atomic session creation/join
                     cookingSessionRepository.createOrJoinSession(
@@ -203,13 +222,22 @@ class CookingSessionViewModel @Inject constructor(
                         totalSteps = totalSteps
                     )
                         .onSuccess { sessionId ->
+                            // Check if this user is creating a new waiting session
+                            val isCreator = if (isCoopMode) {
+                                val partnerIdField = if (currentUserGender == Gender.FEMALE) maleUserId else femaleUserId
+                                partnerIdField == "waiting_for_partner"
+                            } else {
+                                false
+                            }
+
                             _state.update {
                                 it.copy(
                                     recipe = recipe,
                                     currentUserGender = currentUserGender,
                                     currentUserId = if (currentUserGender == Gender.FEMALE) femaleUserId else maleUserId,
                                     partnerUserId = if (currentUserGender == Gender.FEMALE) maleUserId else femaleUserId,
-                                    isLoading = false
+                                    isLoading = false,
+                                    isCreatorWaitingForPartner = isCreator
                                 )
                             }
 
@@ -356,7 +384,9 @@ class CookingSessionViewModel @Inject constructor(
                             currentStep = currentStep,
                             myProgress = myProgress,
                             partnerProgress = partnerProgress,
-                            partnerConnectionStatus = partnerStatus
+                            partnerConnectionStatus = partnerStatus,
+                            // Clear creator waiting flag when session starts
+                            isCreatorWaitingForPartner = if (session.status == SessionStatus.IN_PROGRESS) false else it.isCreatorWaitingForPartner
                         )
                     }
 
@@ -562,23 +592,33 @@ class CookingSessionViewModel @Inject constructor(
     }
 
     // Couple için WAITING session'ı real-time dinle
-    fun observeWaitingSessionForCouple(coupleId: String) {
+    fun observeWaitingSessionForCouple(coupleId: String, currentUserId: String, currentUserGender: Gender?) {
         waitingSessionObserverJob?.cancel()
 
         waitingSessionObserverJob = viewModelScope.launch {
             cookingSessionRepository.observeWaitingSessionForCouple(coupleId)
                 .collect { session ->
                     if (session != null && session.status == SessionStatus.WAITING) {
-                        // Eğer zaten bir session'daysa dialog gösterme
-                        val currentSession = _state.value.session
-                        if (currentSession == null || currentSession.status == SessionStatus.COMPLETED) {
-                            _state.update {
-                                it.copy(
-                                    session = session,
-                                    showWaitingForPartnerDialog = true
-                                )
+                        // Check if current user is the one waiting (created the session)
+                        val isCurrentUserWaiting = when (currentUserGender) {
+                            Gender.FEMALE -> session.femaleUserId == currentUserId && session.maleUserId == "waiting_for_partner"
+                            Gender.MALE -> session.maleUserId == currentUserId && session.femaleUserId == "waiting_for_partner"
+                            else -> false
+                        }
+
+                        // Only show dialog to the partner (not the one who created the waiting session)
+                        if (!isCurrentUserWaiting) {
+                            // Eğer zaten bir session'daysa dialog gösterme
+                            val currentSession = _state.value.session
+                            if (currentSession == null || currentSession.status == SessionStatus.COMPLETED) {
+                                _state.update {
+                                    it.copy(
+                                        session = session,
+                                        showWaitingForPartnerDialog = true
+                                    )
+                                }
+                                loadRecipe(session.countryCode, session.recipeId)
                             }
-                            loadRecipe(session.countryCode, session.recipeId)
                         }
                     } else {
                         // Waiting session yok veya artık WAITING değil
@@ -704,5 +744,33 @@ class CookingSessionViewModel @Inject constructor(
         connectionCheckJob?.cancel()
         connectionObserverJob?.cancel()
         timeoutCheckJob?.cancel()
+    }
+
+    // ==================== SESSION MANAGEMENT ====================
+
+    private fun cancelWaitingSession() {
+        viewModelScope.launch {
+            val session = _state.value.session
+            if (session != null) {
+                cookingSessionRepository.deleteSession(session.sessionId)
+                    .onSuccess {
+                        _state.update {
+                            it.copy(
+                                session = null,
+                                showWaitingForPartnerDialog = false
+                            )
+                        }
+                    }
+                    .onFailure { e ->
+                        _state.update { it.copy(error = e.message ?: "Session iptal edilemedi") }
+                    }
+            }
+        }
+    }
+
+    fun cleanUpOldSessions(accountId: String) {
+        viewModelScope.launch {
+            cookingSessionRepository.cleanUpOldSessionsForCouple(accountId)
+        }
     }
 }

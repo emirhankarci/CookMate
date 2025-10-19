@@ -58,6 +58,10 @@ sealed class CookingSessionEvent {
     object DismissCompletionDialog : CookingSessionEvent()
     object ShowCoopModeDialog : CookingSessionEvent()
 
+    // Session yönetimi
+    object CancelWaitingSession : CookingSessionEvent()
+    data class CleanUpOldSessions(val accountId: String) : CookingSessionEvent()
+
     // Hata durumunu temizle
     object ClearError : CookingSessionEvent()
 }

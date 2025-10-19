@@ -26,7 +26,8 @@ data class CookingSessionState(
     // Dialog durumları
     val showCoopModeDialog: Boolean = false,
     val showWaitingForPartnerDialog: Boolean = false,
-    val showCompletionDialog: Boolean = false
+    val showCompletionDialog: Boolean = false,
+    val isCreatorWaitingForPartner: Boolean = false
 ) {
     // Helper: Benim adımım tamamlandı mı?
     fun isMyStepCompleted(): Boolean = myProgress.isCompleted

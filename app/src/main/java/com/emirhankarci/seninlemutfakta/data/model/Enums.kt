@@ -9,7 +9,8 @@ enum class SessionStatus {
     WAITING,        // Eş henüz katılmadı
     IN_PROGRESS,    // İkisi de aktif
     PAUSED,         // Birisi bağlantıyı kaybetti
-    COMPLETED       // Tarif tamamlandı
+    COMPLETED,      // Tarif tamamlandı
+    CANCELLED       // Session iptal edildi
 }
 
 enum class BadgeType {

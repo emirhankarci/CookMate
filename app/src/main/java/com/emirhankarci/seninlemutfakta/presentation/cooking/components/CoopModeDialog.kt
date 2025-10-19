@@ -295,12 +295,15 @@ fun CoopModeDialog(
 @Composable
 fun CoopModeDialogPreview() {
     CoopModeDialog(
-        recipeName = "Spaghetti Carbonara",
+        recipeName = "Delicious Pasta",
         onDismiss = {},
         onSoloMode = {},
         onCoopMode = {}
     )
 }
+
+
+
 
 @Composable
 fun FeatureItem(
