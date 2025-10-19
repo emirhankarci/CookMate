@@ -1,6 +1,9 @@
 package com.emirhankarci.seninlemutfakta.presentation.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import com.emirhankarci.seninlemutfakta.data.model.CookingSession
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.presentation.auth.AuthViewModel
@@ -16,6 +19,7 @@ import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CoopModeSel
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListEvent
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListScreen
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewModel
+import com.emirhankarci.seninlemutfakta.presentation.profile.ProfileScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListEvent
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListViewModel
@@ -71,156 +75,202 @@ fun AppNavigation(
         }
     }
 
-    when (currentScreen) {
-        Screen.Login -> {
-            LoginScreen(
-                state = authState,
-                onEvent = authViewModel::onEvent,
-                onNavigateToRegister = { currentScreen = Screen.Register },
-                onLoginSuccess = { currentScreen = Screen.UserSelection }
-            )
-        }
+    // Determine if bottom nav should be shown
+    val shouldShowBottomNav = currentScreen in listOf(
+        Screen.CountryList,
+        Screen.RecipeList,
+        Screen.Profile
+    )
 
-        Screen.Register -> {
-            RegisterScreen(
-                state = authState,
-                onEvent = authViewModel::onEvent,
-                onNavigateToLogin = { currentScreen = Screen.Login },
-                onRegisterSuccess = { currentScreen = Screen.UserSelection }
-            )
-        }
+    // Screens with bottom navigation
+    if (shouldShowBottomNav) {
+        Scaffold(
+            bottomBar = {
+                BottomNavigationBarTopLine(
+                    currentScreen = currentScreen,
+                    onNavigate = { screen -> currentScreen = screen }
+                )
+            }
+        ) { paddingValues ->
+            when (currentScreen) {
+                Screen.CountryList -> {
+                    // Çift bilgilerini hazırla
+                    val coupleInfo = coupleState.currentCouple?.let { couple ->
+                        "💕 ${couple.coupleName}"
+                    } ?: ""
 
-        Screen.UserSelection -> {
-            UserSelectionScreen(
-                coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
-                onGenderSelected = { gender ->
-                    currentUserGender = gender
-                    currentScreen = Screen.CountryList
-                },
-                onLogout = {
-                    authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                    coupleViewModel.clearCoupleData()
-                    currentUserGender = null
-                    currentScreen = Screen.Login
-                }
-            )
-        }
-
-        Screen.CountryList -> {
-            // Çift bilgilerini hazırla
-            val coupleInfo = coupleState.currentCouple?.let { couple ->
-                "💕 ${couple.coupleName}"
-            } ?: ""
-
-            CountryListScreen(
-                viewModel = countryListViewModel,
-                onCountryClick = { countryCode ->
-                    selectedCountry = countryCode
-                    recipeListViewModel.onEvent(
-                        RecipeListEvent.LoadRecipes(countryCode)
-                    )
-                    currentScreen = Screen.RecipeList
-                },
-                onLogout = {
-                    authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                    coupleViewModel.clearCoupleData()
-                    currentUserGender = null
-                    currentScreen = Screen.Login
-                },
-                coupleInfo = coupleInfo
-            )
-        }
-
-        Screen.RecipeList -> {
-            val recipeState by recipeListViewModel.state.collectAsState()
-
-            RecipeListScreen(
-                viewModel = recipeListViewModel,
-                onBack = { currentScreen = Screen.CountryList },
-                onRecipeClick = { recipeId ->
-                    selectedRecipe = recipeId
-
-                    val recipe = recipeState.recipes.find { it.recipeId == recipeId }
-                    selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
-
-                    currentScreen = Screen.CoopModeSelection
-                }
-            )
-        }
-
-        Screen.CoopModeSelection -> {
-            val scope = rememberCoroutineScope()
-
-            CoopModeSelectionScreen(
-                recipeName = selectedRecipeName,
-                onSoloMode = {
-                    isCoopMode = false
-                    // Solo mode: Profil genderını kullan, direkt session'a git
-                    currentUserGender?.let { gender ->
-                        val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                        val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
-
-                        cookingSessionViewModel.onEvent(
-                            CookingSessionEvent.StartSession(
-                                recipeId = selectedRecipe,
-                                countryCode = selectedCountry,
-                                isCoopMode = false,
-                                coupleId = coupleId,
-                                femaleUserId = femaleId,
-                                maleUserId = maleId,
-                                currentUserGender = gender
+                    CountryListScreen(
+                        viewModel = countryListViewModel,
+                        onCountryClick = { countryCode ->
+                            selectedCountry = countryCode
+                            recipeListViewModel.onEvent(
+                                RecipeListEvent.LoadRecipes(countryCode)
                             )
-                        )
-                        currentScreen = Screen.CookingSession
+                            currentScreen = Screen.RecipeList
+                        },
+                        onLogout = {
+                            authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                            coupleViewModel.clearCoupleData()
+                            currentUserGender = null
+                            currentScreen = Screen.Login
+                        },
+                        coupleInfo = coupleInfo,
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+
+                Screen.RecipeList -> {
+                    val recipeState by recipeListViewModel.state.collectAsState()
+
+                    RecipeListScreen(
+                        viewModel = recipeListViewModel,
+                        onBack = { currentScreen = Screen.CountryList },
+                        onRecipeClick = { recipeId ->
+                            selectedRecipe = recipeId
+
+                            val recipe = recipeState.recipes.find { it.recipeId == recipeId }
+                            selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
+
+                            currentScreen = Screen.CoopModeSelection
+                        },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+
+                Screen.Profile -> {
+                    ProfileScreen(
+                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                        userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
+                        onLogout = {
+                            authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                            coupleViewModel.clearCoupleData()
+                            currentUserGender = null
+                            currentScreen = Screen.Login
+                        },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+
+                else -> {
+                    // Should not happen, but handle gracefully
+                }
+            }
+        }
+    } else {
+        // Screens without bottom navigation
+        when (currentScreen) {
+            Screen.Login -> {
+                LoginScreen(
+                    state = authState,
+                    onEvent = authViewModel::onEvent,
+                    onNavigateToRegister = { currentScreen = Screen.Register },
+                    onLoginSuccess = { currentScreen = Screen.UserSelection }
+                )
+            }
+
+            Screen.Register -> {
+                RegisterScreen(
+                    state = authState,
+                    onEvent = authViewModel::onEvent,
+                    onNavigateToLogin = { currentScreen = Screen.Login },
+                    onRegisterSuccess = { currentScreen = Screen.UserSelection }
+                )
+            }
+
+            Screen.UserSelection -> {
+                UserSelectionScreen(
+                    coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                    onGenderSelected = { gender ->
+                        currentUserGender = gender
+                        currentScreen = Screen.CountryList
+                    },
+                    onLogout = {
+                        authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                        coupleViewModel.clearCoupleData()
+                        currentUserGender = null
+                        currentScreen = Screen.Login
                     }
-                },
-                onCoopMode = {
-                    isCoopMode = true
-                    // Coop mode: Profil genderını kullan, session oluştur/katıl
-                    currentUserGender?.let { gender ->
-                        scope.launch {
-                            // 1. Önce mevcut waiting session kontrolü yap
-                            val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
+                )
+            }
 
-                            if (existingSession != null) {
-                                // Mevcut session bulundu, katıl
-                                cookingSessionViewModel.onEvent(
-                                    CookingSessionEvent.JoinWaitingSession(
-                                        sessionId = existingSession.sessionId,
-                                        currentUserGender = gender
-                                    )
-                                )
-                            } else {
-                                // 2. Waiting session yok, atomic session creation dene
-                                val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                                val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+            Screen.CoopModeSelection -> {
+                val scope = rememberCoroutineScope()
 
-                                // Atomic session creation/join - race condition önleyici
-                                cookingSessionViewModel.onEvent(
-                                    CookingSessionEvent.CreateOrJoinSession(
-                                        recipeId = selectedRecipe,
-                                        countryCode = selectedCountry,
-                                        isCoopMode = true,
-                                        coupleId = coupleId,
-                                        femaleUserId = femaleId,
-                                        maleUserId = maleId,
-                                        currentUserGender = gender
-                                    )
+                CoopModeSelectionScreen(
+                    recipeName = selectedRecipeName,
+                    onSoloMode = {
+                        isCoopMode = false
+                        // Solo mode: Profil genderını kullan, direkt session'a git
+                        currentUserGender?.let { gender ->
+                            val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
+                            val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+
+                            cookingSessionViewModel.onEvent(
+                                CookingSessionEvent.StartSession(
+                                    recipeId = selectedRecipe,
+                                    countryCode = selectedCountry,
+                                    isCoopMode = false,
+                                    coupleId = coupleId,
+                                    femaleUserId = femaleId,
+                                    maleUserId = maleId,
+                                    currentUserGender = gender
                                 )
-                            }
+                            )
                             currentScreen = Screen.CookingSession
                         }
-                    }
-                }
-            )
-        }
+                    },
+                    onCoopMode = {
+                        isCoopMode = true
+                        // Coop mode: Profil genderını kullan, session oluştur/katıl
+                        currentUserGender?.let { gender ->
+                            scope.launch {
+                                // 1. Önce mevcut waiting session kontrolü yap
+                                val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
 
-        Screen.CookingSession -> {
-            CookingSessionScreen(
-                state = cookingState,
-                onEvent = cookingSessionViewModel::onEvent,
-                onBack = { currentScreen = Screen.RecipeList }
-            )
+                                if (existingSession != null) {
+                                    // Mevcut session bulundu, katıl
+                                    cookingSessionViewModel.onEvent(
+                                        CookingSessionEvent.JoinWaitingSession(
+                                            sessionId = existingSession.sessionId,
+                                            currentUserGender = gender
+                                        )
+                                    )
+                                } else {
+                                    // 2. Waiting session yok, atomic session creation dene
+                                    val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
+                                    val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
+
+                                    // Atomic session creation/join - race condition önleyici
+                                    cookingSessionViewModel.onEvent(
+                                        CookingSessionEvent.CreateOrJoinSession(
+                                            recipeId = selectedRecipe,
+                                            countryCode = selectedCountry,
+                                            isCoopMode = true,
+                                            coupleId = coupleId,
+                                            femaleUserId = femaleId,
+                                            maleUserId = maleId,
+                                            currentUserGender = gender
+                                        )
+                                    )
+                                }
+                                currentScreen = Screen.CookingSession
+                            }
+                        }
+                    }
+                )
+            }
+
+            Screen.CookingSession -> {
+                CookingSessionScreen(
+                    state = cookingState,
+                    onEvent = cookingSessionViewModel::onEvent,
+                    onBack = { currentScreen = Screen.RecipeList }
+                )
+            }
+
+            else -> {
+                // Should not happen
+            }
         }
     }
 
