@@ -28,31 +28,24 @@ fun RecipeListScreen(
     viewModel: RecipeListViewModel,
     onBack: () -> Unit,
     onRecipeClick: (String) -> Unit,
+    // DEĞİŞİKLİK 1: selectedFilter state'i artık dışarıdan parametre olarak geliyor.
+    selectedFilter: RecipeFilter,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    var selectedFilter by remember { mutableStateOf(RecipeFilter.ALL) }
+    // DEĞİŞİKLİK 2: 'selectedFilter' state yönetimi (remember) buradan kaldırıldı.
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            // DEĞİŞİKLİK 3: Arka planı orijinal beyazımsı renge ayarlıyoruz.
+            .background(Color(0xFFFFF9F5))
     ) {
-        // Header with gradient
-        RecipeListHeader(
-            countryName = state.countryName,
-            countryFlag = state.countryFlagEmoji,
-            totalRecipes = state.recipes.size,
-            completedRecipes = state.getCompletedCount(),
-            progressPercentage = state.getProgressPercentage(),
-            selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it },
-            onBack = onBack
-        )
+        // DEĞİŞİKLİK 4: RecipeListHeader çağrısı buradan tamamen kaldırıldı.
 
         // Content
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFFFF9F5)),
+            modifier = Modifier.fillMaxSize(), // Arka planı üstteki Column'dan aldığı için buradan sildik.
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -65,7 +58,7 @@ fun RecipeListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Error: ${state.error}")
+                        Text("Error: ${state.error}", color = Color.DarkGray) // Beyaz arka plan için renk güncellendi
                         Button(
                             onClick = { viewModel.onEvent(RecipeListEvent.Retry) },
                             colors = ButtonDefaults.buttonColors(
@@ -82,6 +75,7 @@ fun RecipeListScreen(
                 }
 
                 else -> {
+                    // DEĞİŞİKLİK 5: Filtreleme işlemi artık parametreden gelen 'selectedFilter' değerine göre yapılıyor.
                     val filteredRecipes = state.getFilteredRecipes(selectedFilter)
 
                     if (filteredRecipes.isEmpty()) {
@@ -124,7 +118,6 @@ fun RecipeListHeader(
     onFilterChange: (RecipeFilter) -> Unit,
     onBack: () -> Unit
 ) {
-    // Gradient colors - matching CountryListScreen
     val gradientColors = listOf(
         Color(0xFFFFB6C1),
         Color(0xFFFF69B4),
@@ -135,32 +128,23 @@ fun RecipeListHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                brush = Brush.linearGradient(
-                    colors = gradientColors,
-                    start = Offset(0f, 0f),
-                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                )
+                brush = Brush.linearGradient(colors = gradientColors)
             )
-            .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+            // DEĞİŞİKLİK 6: Scaffold'un topBar'ı status bar'ı otomatik yönettiği için
+            // hardcoded üst padding'i kaldırıp standart padding veriyoruz.
+            .statusBarsPadding()
+            .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
     ) {
-        // Back button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(
-                onClick = onBack,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+        // Geri butonu artık Header'ın bir parçası değil, Scaffold'un navigationIcon'u olacak.
+        // Ancak burada da bırakabiliriz, tasarım tercihine bağlı. Şimdilik burada kalsın.
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.White
+            )
         }
+
 
         Spacer(modifier = Modifier.height(8.dp))
 

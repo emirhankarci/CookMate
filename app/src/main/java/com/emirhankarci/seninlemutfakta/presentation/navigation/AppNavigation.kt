@@ -28,9 +28,11 @@ import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewMo
 import com.emirhankarci.seninlemutfakta.presentation.couple.CoupleViewModel
 import com.emirhankarci.seninlemutfakta.presentation.profile.ProfileScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListEvent
+import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListHeader
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListViewModel
 import kotlinx.coroutines.launch
+import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeFilter // DÜZELTME: Bu import satırı hatayı giderir.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,34 +110,27 @@ fun AppNavigation(
 
         Screen.RecipeList -> {
             val recipeState by recipeListViewModel.state.collectAsState()
+            // DEĞİŞİKLİK 1: 'selectedFilter' state'ini buraya taşıdık.
+            var selectedFilter by remember { mutableStateOf(RecipeFilter.ALL) }
 
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
+                // DEĞİŞİKLİK 2: 'topBar' parametresine RecipeListHeader'ı veriyoruz.
                 topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Text(
-                                text = currentScreen.title,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { currentScreen = Screen.CountryList }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
-                        )
+                    RecipeListHeader(
+                        countryName = recipeState.countryName,
+                        countryFlag = recipeState.countryFlagEmoji,
+                        totalRecipes = recipeState.recipes.size,
+                        completedRecipes = recipeState.getCompletedCount(),
+                        progressPercentage = recipeState.getProgressPercentage(),
+                        selectedFilter = selectedFilter,
+                        onFilterChange = { newFilter -> selectedFilter = newFilter },
+                        onBack = { currentScreen = Screen.CountryList }
                     )
                 }
             ) { modifier ->
+                // DEĞİŞİKLİK 3: RecipeListScreen'i yeni parametrelerle çağırıyoruz.
                 RecipeListScreen(
                     viewModel = recipeListViewModel,
                     onBack = { currentScreen = Screen.CountryList },
@@ -145,6 +140,7 @@ fun AppNavigation(
                         selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
                         currentScreen = Screen.CoopModeSelection
                     },
+                    selectedFilter = selectedFilter, // State'i aşağıya paslıyoruz
                     modifier = modifier
                 )
             }
