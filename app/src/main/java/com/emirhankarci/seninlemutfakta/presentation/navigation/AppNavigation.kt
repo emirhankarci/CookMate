@@ -33,6 +33,7 @@ import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListViewModel
 import kotlinx.coroutines.launch
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeFilter // DÜZELTME: Bu import satırı hatayı giderir.
+import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CookingScreenHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -325,30 +326,19 @@ fun AppNavigation(
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
+                // DEĞİŞİKLİK: 'topBar' slotuna yeni ve temiz Header'ımızı yerleştiriyoruz.
                 topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Text(
-                                text = currentScreen.title,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { currentScreen = Screen.RecipeList }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
-                        )
+                    val recipeName = cookingState.recipe?.titleTurkish
+                        ?: cookingState.recipe?.title
+                        ?: "Pişirme Ekranı"
+
+                    CookingScreenHeader(
+                        recipeName = recipeName,
+                        onBack = { currentScreen = Screen.RecipeList }
                     )
                 }
             ) { modifier ->
+                // Scaffold'un content'i olarak CookingSessionScreen'i veriyoruz.
                 CookingSessionScreen(
                     state = cookingState,
                     onEvent = cookingSessionViewModel::onEvent,

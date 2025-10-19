@@ -83,10 +83,10 @@ fun CookingSessionScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CookingContent(
-    state: CookingSessionState,
-    onEvent: (CookingSessionEvent) -> Unit,
+fun CookingScreenHeader(
+    recipeName: String,
     onBack: () -> Unit
 ) {
     val gradientColors = listOf(
@@ -95,19 +95,45 @@ fun CookingContent(
         Color(0xFFFF6B6B)
     )
 
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = recipeName,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.Transparent // Arka planı alttaki Box'tan alacak
+        ),
+        modifier = Modifier.background(Brush.linearGradient(colors = gradientColors))
+    )
+}
+
+
+@Composable
+fun CookingContent(
+    state: CookingSessionState,
+    onEvent: (CookingSessionEvent) -> Unit,
+    onBack: () -> Unit
+) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF9F5))
+            .background(Color(0xFFFFF9F5)) // Ana içeriğin arka planı doğru.
     ) {
-        // Top Status Bar with Gradient
-        TopStatusBar(
-            recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
-            currentStep = (state.session?.currentStep ?: 0) + 1,
-            totalSteps = state.session?.totalSteps ?: 0,
-            gradientColors = gradientColors,
-            onBack = onBack
-        )
+        // DEĞİŞİKLİK 2: Çakışmaya neden olan TopStatusBar çağrısı buradan tamamen kaldırıldı.
+        // Artık bu görev AppNavigation'daki MainScaffold'a ait.
 
         // Progress Indicator
         ProgressIndicator(
@@ -171,70 +197,6 @@ fun CookingContent(
 
             // Bottom spacing for safe area
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-fun TopStatusBar(
-    recipeName: String,
-    currentStep: Int,
-    totalSteps: Int,
-    gradientColors: List<Color>,
-    onBack: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = gradientColors,
-                    start = Offset(0f, 0f),
-                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                )
-            )
-            .padding(top = 48.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left: Back button
-            IconButton(
-                onClick = onBack,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Center: Recipe name and step
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = recipeName,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1
-                )
-                Text(
-                    text = "Step $currentStep of $totalSteps",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.9f)
-                )
-            }
-
-            // Right: Menu/options (placeholder)
-            Box(modifier = Modifier.size(48.dp))
         }
     }
 }
