@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeFilter // DÜZELTME: Bu import satırı hatayı giderir.
 import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CookingScreenHeader
 import com.emirhankarci.seninlemutfakta.presentation.profile.ProfileHeader
+import com.emirhankarci.seninlemutfakta.presentation.welcome.WelcomeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,12 +51,12 @@ fun AppNavigation(
 
     var currentScreen by remember {
         mutableStateOf<Screen>(
-            if (!authState.isLoggedIn) Screen.Login else Screen.UserSelection
+            if (!authState.isLoggedIn) Screen.Welcome else Screen.UserSelection
         )
     }
 
     LaunchedEffect(authState.isLoggedIn) {
-        currentScreen = if (!authState.isLoggedIn) Screen.Login else Screen.UserSelection
+        currentScreen = if (!authState.isLoggedIn) Screen.Welcome else Screen.UserSelection
     }
 
     var selectedCountry by remember { mutableStateOf("") }
@@ -168,11 +169,18 @@ fun AppNavigation(
                         authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
                         coupleViewModel.clearCoupleData()
                         currentUserGender = null
-                        currentScreen = Screen.Login
+                        currentScreen = Screen.Welcome
                     },
                     modifier = modifier
                 )
             }
+        }
+
+        Screen.Welcome -> {
+            WelcomeScreen(
+                onNavigateToLogin = { currentScreen = Screen.Login },
+                onNavigateToRegister = { currentScreen = Screen.Register }
+            )
         }
 
         Screen.Login -> {
