@@ -27,14 +27,15 @@ fun CountryListScreen(
     viewModel: CountryListViewModel,
     onCountryClick: (String) -> Unit,
     onLogout: () -> Unit = {},
-    coupleInfo: String = ""
+    coupleInfo: String = "",
+    modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
     val clipboardManager = LocalClipboardManager.current
     var selectedFilter by remember { mutableStateOf("All Countries") }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         // Header with gradient and logout
         CountryListHeader(
