@@ -1,5 +1,6 @@
 package com.emirhankarci.seninlemutfakta.presentation.profile
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,9 +17,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.emirhankarci.seninlemutfakta.R
+import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.ui.theme.*
 
 @Composable
@@ -133,7 +137,8 @@ fun ProfileScreen(
 @Composable
 fun ProfileHeader(
     userName: String,
-    coupleName: String
+    coupleName: String,
+    userGender: Gender?
 ) {
     Box(
         modifier = Modifier
@@ -163,11 +168,16 @@ fun ProfileHeader(
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
+                Image(
+                    painter = painterResource(
+                        id = when (userGender) {
+                            Gender.FEMALE -> R.drawable.female_cook_icon
+                            Gender.MALE -> R.drawable.male_cook_icon
+                            else -> R.drawable.male_cook_icon
+                        }
+                    ),
                     contentDescription = "Profile",
-                    modifier = Modifier.size(48.dp),
-                    tint = NavBarActiveIcon
+                    modifier = Modifier.size(48.dp)
                 )
             }
 

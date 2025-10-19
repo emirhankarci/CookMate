@@ -156,7 +156,8 @@ fun AppNavigation(
                 topBar = {
                     ProfileHeader(
                         userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
-                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz"
+                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                        userGender = currentUserGender
                     )
                 }
             ) { modifier ->

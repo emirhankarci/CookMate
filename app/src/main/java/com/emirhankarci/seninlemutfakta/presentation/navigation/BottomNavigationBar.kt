@@ -83,13 +83,13 @@ fun BottomNavigationBar(
                 color = NavBarBackground,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
             )
-            .height(72.dp)
             .navigationBarsPadding()
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .fillMaxWidth()
+                .height(88.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -140,13 +140,13 @@ private fun BottomNavItemView(
 
     // Animated pill background
     val pillHeight by animateDpAsState(
-        targetValue = if (isSelected) 48.dp else 0.dp,
+        targetValue = if (isSelected) 64.dp else 0.dp,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "pill_height"
     )
 
     val pillWidth by animateDpAsState(
-        targetValue = if (isSelected) 100.dp else 0.dp,
+        targetValue = if (isSelected) 110.dp else 0.dp,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "pill_width"
     )
@@ -183,25 +183,24 @@ private fun BottomNavItemView(
         Column(
             modifier = Modifier
                 .scale(scale)
-                .padding(8.dp),
+                .padding(vertical = 8.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(
                 imageVector = ImageVector.vectorResource(id = item.icon),
                 contentDescription = item.label,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(28.dp),
                 tint = iconColor
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = item.label,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 color = textColor,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.3.sp,
+                maxLines = 1
             )
         }
     }
@@ -231,10 +230,11 @@ fun BottomNavigationBarTopLine(
                 color = NavBarBackground,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
             )
-            .height(72.dp)
             .navigationBarsPadding()
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier
+            .fillMaxWidth()
+            .height(88.dp)) {
             // Top indicator line
             Row(
                 modifier = Modifier
@@ -264,7 +264,7 @@ fun BottomNavigationBarTopLine(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -325,26 +325,25 @@ private fun BottomNavItemSimple(
                 ),
                 onClick = onClick
             )
-            .padding(8.dp)
+            .padding(vertical = 8.dp, horizontal = 8.dp)
             .scale(scale),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(
             imageVector = ImageVector.vectorResource(id = item.icon),
             contentDescription = item.label,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(28.dp),
             tint = iconColor
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-
         Text(
             text = item.label,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = textColor,
-            letterSpacing = 0.5.sp
+            letterSpacing = 0.3.sp,
+            maxLines = 1
         )
     }
 }
