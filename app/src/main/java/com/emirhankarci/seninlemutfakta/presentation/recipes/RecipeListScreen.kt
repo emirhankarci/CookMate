@@ -83,8 +83,8 @@ fun RecipeListScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(filteredRecipes) { recipe ->
                                 RecipeCard(
@@ -283,13 +283,13 @@ fun RecipeCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp),
-        shape = RoundedCornerShape(24.dp),
+            .height(200.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = cardColor
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isLocked) 2.dp else 8.dp
+            defaultElevation = if (isLocked) 2.dp else 6.dp
         )
     ) {
         Box(
@@ -302,8 +302,8 @@ fun RecipeCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Top row: Status badge
                 Row(
@@ -314,7 +314,7 @@ fun RecipeCard(
                     // Left: Recipe emoji or image placeholder
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                             .background(
                                 brush = Brush.linearGradient(
@@ -328,7 +328,7 @@ fun RecipeCard(
                     ) {
                         Text(
                             text = if (isLocked) "🔒" else "🍳",
-                            fontSize = 24.sp
+                            fontSize = 20.sp
                         )
                     }
 
@@ -336,15 +336,15 @@ fun RecipeCard(
                     when {
                         isLocked -> {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 color = Color(0xFF757575)
                             ) {
                                 Text(
                                     text = "🔒 Locked",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                                 )
                             }
                         }
@@ -352,13 +352,13 @@ fun RecipeCard(
                             Surface(
                                 shape = CircleShape,
                                 color = Color(0xFF4CAF50),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(28.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         text = "✓",
                                         color = Color.White,
-                                        fontSize = 16.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -366,27 +366,25 @@ fun RecipeCard(
                         }
                         else -> {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 color = Color(0xFFFF69B4)
                             ) {
                                 Text(
                                     text = "New",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
                 // Recipe name
                 Text(
                     text = recipe.titleTurkish.ifEmpty { recipe.title },
-                    fontSize = 20.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isLocked) Color(0xFF757575) else Color(0xFF2C3E50),
                     maxLines = 1
@@ -396,7 +394,7 @@ fun RecipeCard(
                 if (recipe.titleTurkish.isNotEmpty() && recipe.title != recipe.titleTurkish) {
                     Text(
                         text = recipe.title,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF95A5A6),
                         maxLines = 1
                     )
@@ -405,7 +403,7 @@ fun RecipeCard(
                 // Description
                 Text(
                     text = recipe.description,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF95A5A6),
                     maxLines = 2
                 )
@@ -416,7 +414,7 @@ fun RecipeCard(
                     // Info badges row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Time badge
                         InfoBadge(
@@ -435,15 +433,15 @@ fun RecipeCard(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // CTA Button
                     Button(
                         onClick = onClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
+                            .height(42.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = when (status) {
                                 RecipeStatus.COMPLETED -> Color(0xFF4CAF50)
@@ -457,7 +455,7 @@ fun RecipeCard(
                                 RecipeStatus.IN_PROGRESS -> "Continue →"
                                 RecipeStatus.NOT_STARTED -> "Start Cooking →"
                             },
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -465,7 +463,7 @@ fun RecipeCard(
                     // Locked state
                     Text(
                         text = "Complete previous recipes to unlock",
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         color = Color(0xFF9E9E9E),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
@@ -482,13 +480,13 @@ fun InfoBadge(
     text: String
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = icon, fontSize = 12.sp)
+        Text(text = icon, fontSize = 11.sp)
         Text(
             text = text,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = Color(0xFF95A5A6)
         )
     }
@@ -507,21 +505,21 @@ fun DifficultyBadge(
     }
 
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(7.dp),
         color = color.copy(alpha = 0.15f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Stars
             repeat(difficulty.coerceIn(1, 5)) {
-                Text(text = "⭐", fontSize = 10.sp)
+                Text(text = "⭐", fontSize = 9.sp)
             }
             Text(
                 text = text,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 color = color,
                 fontWeight = FontWeight.Medium
             )
