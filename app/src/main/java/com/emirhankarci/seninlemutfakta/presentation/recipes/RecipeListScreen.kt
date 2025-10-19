@@ -27,13 +27,14 @@ import com.emirhankarci.seninlemutfakta.data.model.Recipe
 fun RecipeListScreen(
     viewModel: RecipeListViewModel,
     onBack: () -> Unit,
-    onRecipeClick: (String) -> Unit
+    onRecipeClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
     var selectedFilter by remember { mutableStateOf(RecipeFilter.ALL) }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         // Header with gradient
         RecipeListHeader(
