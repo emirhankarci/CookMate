@@ -94,11 +94,6 @@ fun AppNavigation(
         ) { paddingValues ->
             when (currentScreen) {
                 Screen.CountryList -> {
-                    // Çift bilgilerini hazırla
-                    val coupleInfo = coupleState.currentCouple?.let { couple ->
-                        "💕 ${couple.coupleName}"
-                    } ?: ""
-
                     CountryListScreen(
                         viewModel = countryListViewModel,
                         onCountryClick = { countryCode ->
@@ -108,13 +103,6 @@ fun AppNavigation(
                             )
                             currentScreen = Screen.RecipeList
                         },
-                        onLogout = {
-                            authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                            coupleViewModel.clearCoupleData()
-                            currentUserGender = null
-                            currentScreen = Screen.Login
-                        },
-                        coupleInfo = coupleInfo,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -142,6 +130,10 @@ fun AppNavigation(
                         coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
                         userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
                         onLogout = {
+                            // Önce tüm Firebase listener'ları durdur
+                            cookingSessionViewModel.stopObservingWaitingSession()
+
+                            // Sonra logout yap
                             authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
                             coupleViewModel.clearCoupleData()
                             currentUserGender = null
@@ -185,6 +177,10 @@ fun AppNavigation(
                         currentScreen = Screen.CountryList
                     },
                     onLogout = {
+                        // Önce tüm Firebase listener'ları durdur
+                        cookingSessionViewModel.stopObservingWaitingSession()
+
+                        // Sonra logout yap
                         authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
                         coupleViewModel.clearCoupleData()
                         currentUserGender = null
