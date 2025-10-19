@@ -8,4 +8,5 @@ sealed class Screen {
     object RecipeList : Screen()
     object CoopModeSelection : Screen()
     object CookingSession : Screen()
+    object Profile : Screen()
 }
