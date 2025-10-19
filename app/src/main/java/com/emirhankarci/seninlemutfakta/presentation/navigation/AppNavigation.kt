@@ -34,6 +34,7 @@ import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListViewModel
 import kotlinx.coroutines.launch
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeFilter // DÜZELTME: Bu import satırı hatayı giderir.
 import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CookingScreenHeader
+import com.emirhankarci.seninlemutfakta.presentation.profile.ProfileHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,24 +152,16 @@ fun AppNavigation(
             MainScaffold(
                 currentScreen = currentScreen,
                 onNavigate = { screen -> currentScreen = screen },
+                // DEĞİŞİKLİK 2: 'topBar' slotunu yeni ProfileHeader'ımız ile değiştiriyoruz.
                 topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Text(
-                                text = currentScreen.title,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
-                        )
+                    ProfileHeader(
+                        userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
+                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz"
                     )
                 }
             ) { modifier ->
+                // DEĞİŞİKLİK 3: ProfileScreen artık sadece logout fonksiyonuna ve modifier'a ihtiyaç duyuyor.
                 ProfileScreen(
-                    coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
-                    userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
                     onLogout = {
                         cookingSessionViewModel.stopObservingWaitingSession()
                         authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)

@@ -23,74 +23,17 @@ import com.emirhankarci.seninlemutfakta.ui.theme.*
 
 @Composable
 fun ProfileScreen(
-    coupleName: String,
-    userName: String,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // DEĞİŞİKLİK 2: Ana Column artık SADECE içeriği barındırıyor. Header buradan kaldırıldı.
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color.White) // İçerik arka planı beyaz olarak kalıyor, bu doğru.
             .verticalScroll(rememberScrollState())
+            .padding(top = 24.dp) // Header kaldırıldığı için üste biraz boşluk ekleyelim.
     ) {
-        // Header with gradient background
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            NavBarIndicatorStart,
-                            NavBarIndicatorEnd
-                        )
-                    )
-                )
-                .statusBarsPadding()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp, horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Profile avatar
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        modifier = Modifier.size(48.dp),
-                        tint = NavBarActiveIcon
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = userName,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Text(
-                    text = coupleName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White.copy(alpha = 0.9f)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         // Profile options
         Column(
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -183,6 +126,66 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun ProfileHeader(
+    userName: String,
+    coupleName: String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        NavBarIndicatorStart,
+                        NavBarIndicatorEnd
+                    )
+                )
+            )
+            .statusBarsPadding()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp, horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Profile avatar
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(48.dp),
+                    tint = NavBarActiveIcon
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = userName,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Text(
+                text = coupleName,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.White.copy(alpha = 0.9f)
+            )
         }
     }
 }
