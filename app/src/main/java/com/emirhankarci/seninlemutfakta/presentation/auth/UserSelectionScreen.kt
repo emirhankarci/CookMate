@@ -1,5 +1,7 @@
 package com.emirhankarci.seninlemutfakta.presentation.auth
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,10 +14,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.emirhankarci.seninlemutfakta.R
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 
 @Composable
@@ -66,37 +70,27 @@ fun UserSelectionScreen(
         ) {
             // Logo/Icon
             Surface(
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(120.dp),
                 shape = CircleShape,
                 color = Color.White,
-                shadowElevation = 8.dp
+                shadowElevation = 16.dp
             ) {
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "👨‍🍳",
-                        fontSize = 40.sp
+                    Image(
+                        painter = painterResource(id = R.drawable.male_cook_icon),
+                        contentDescription = "Cook Icon",
+                        modifier = Modifier.size(72.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Couple Name
-            Text(
-                text = "💕 $coupleName",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Title
             Text(
-                text = "Who's Cooking?",
+                text = "Kim Pişiriyor?",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -105,7 +99,7 @@ fun UserSelectionScreen(
 
             // Subtitle
             Text(
-                text = "Select your profile to continue",
+                text = "Devam etmek için profilini seç",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
@@ -115,9 +109,9 @@ fun UserSelectionScreen(
 
             // Woman Button
             GenderButton(
-                emoji = "👩‍🍳",
-                label = "Woman",
-                subtitle = "Ready to create magic",
+                iconRes = R.drawable.female_cook_icon,
+                label = "Kadın",
+                subtitle = "Sihir yapmaya hazır ol",
                 onClick = { onGenderSelected(Gender.FEMALE) }
             )
 
@@ -125,9 +119,9 @@ fun UserSelectionScreen(
 
             // Man Button
             GenderButton(
-                emoji = "👨‍🍳",
-                label = "Man",
-                subtitle = "Ready to create magic",
+                iconRes = R.drawable.male_cook_icon,
+                label = "Erkek",
+                subtitle = "Sihir yapmaya hazır ol",
                 onClick = { onGenderSelected(Gender.MALE) }
             )
 
@@ -139,7 +133,7 @@ fun UserSelectionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💕 Cooking together, loving together 💕",
+                    text = "💕 Aynı mutfakta pişen, aynı kalpte yaşayan aşk 💕",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
@@ -151,7 +145,7 @@ fun UserSelectionScreen(
 
 @Composable
 private fun GenderButton(
-    emoji: String,
+    @DrawableRes iconRes: Int,
     label: String,
     subtitle: String,
     onClick: () -> Unit
@@ -159,7 +153,7 @@ private fun GenderButton(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(120.dp)
             .shadow(
                 elevation = 8.dp,
                 shape = RoundedCornerShape(24.dp),
@@ -178,10 +172,11 @@ private fun GenderButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Emoji
-            Text(
-                text = emoji,
-                fontSize = 48.sp
+            // Icon
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                modifier = Modifier.size(64.dp)
             )
 
             // Text content
