@@ -79,6 +79,7 @@ class CookingSessionViewModel @Inject constructor(
             // Session management
             is CookingSessionEvent.CancelWaitingSession -> cancelWaitingSession()
             is CookingSessionEvent.CleanUpOldSessions -> cleanUpOldSessions(event.accountId)
+            is CookingSessionEvent.ResetSessionState -> resetSessionState()
 
             is CookingSessionEvent.ClearError -> clearError()
         }
@@ -378,6 +379,10 @@ class CookingSessionViewModel @Inject constructor(
                         else -> PartnerConnectionStatus.ONLINE
                     }
 
+                    // Clear creator waiting flag when session starts (but AFTER navigation happens)
+                    val shouldClearWaitingFlag = session.status == SessionStatus.IN_PROGRESS && 
+                                                  _state.value.isCreatorWaitingForPartner
+                    
                     _state.update {
                         it.copy(
                             session = session,
@@ -385,9 +390,20 @@ class CookingSessionViewModel @Inject constructor(
                             myProgress = myProgress,
                             partnerProgress = partnerProgress,
                             partnerConnectionStatus = partnerStatus,
-                            // Clear creator waiting flag when session starts
-                            isCreatorWaitingForPartner = if (session.status == SessionStatus.IN_PROGRESS) false else it.isCreatorWaitingForPartner
+                            // Keep the flag for one cycle to allow navigation, then clear it
+                            isCreatorWaitingForPartner = if (shouldClearWaitingFlag) {
+                                // Wait a bit for navigation to happen
+                                it.isCreatorWaitingForPartner
+                            } else {
+                                it.isCreatorWaitingForPartner
+                            }
                         )
+                    }
+                    
+                    // Clear the flag after a short delay to allow navigation
+                    if (shouldClearWaitingFlag) {
+                        delay(100)
+                        _state.update { it.copy(isCreatorWaitingForPartner = false) }
                     }
 
                     // Debug: İlerleme kontrolü
@@ -610,7 +626,10 @@ class CookingSessionViewModel @Inject constructor(
                         if (!isCurrentUserWaiting) {
                             // Eğer zaten bir session'daysa dialog gösterme
                             val currentSession = _state.value.session
-                            if (currentSession == null || currentSession.status == SessionStatus.COMPLETED) {
+                            // Only show dialog if no active session or if session is completed/cancelled
+                            if (currentSession == null || 
+                                currentSession.status == SessionStatus.COMPLETED || 
+                                currentSession.status == SessionStatus.CANCELLED) {
                                 _state.update {
                                     it.copy(
                                         session = session,
@@ -717,6 +736,24 @@ class CookingSessionViewModel @Inject constructor(
 
     private fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    // Session tamamlandıkında veya geri dönüldüğünde state'i temizle
+    fun resetSessionState() {
+        // Cancel all observers
+        sessionObserverJob?.cancel()
+        connectionCheckJob?.cancel()
+        connectionObserverJob?.cancel()
+        timeoutCheckJob?.cancel()
+        
+        // Reset state
+        _state.update {
+            CookingSessionState(
+                currentUserGender = it.currentUserGender,
+                currentUserId = it.currentUserId,
+                partnerUserId = it.partnerUserId
+            )
+        }
     }
 
     // ==================== CLEANUP ====================

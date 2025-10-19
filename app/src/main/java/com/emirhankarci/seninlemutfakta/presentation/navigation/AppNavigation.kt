@@ -87,11 +87,11 @@ fun AppNavigation(
         }
     }
 
-    // Navigate to CookingSession when session status becomes IN_PROGRESS
-    LaunchedEffect(cookingState.session?.status, cookingState.recipe) {
+    // Navigate to CookingSession when session status becomes IN_PROGRESS (for creator)
+    LaunchedEffect(cookingState.session?.status, cookingState.recipe, cookingState.isCreatorWaitingForPartner) {
         val session = cookingState.session
         val recipe = cookingState.recipe
-        // Only navigate when we have both session and recipe loaded
+        // Creator waiting for partner: Navigate when status becomes IN_PROGRESS
         if (session != null &&
             recipe != null &&
             session.status == SessionStatus.IN_PROGRESS &&
@@ -385,6 +385,11 @@ fun AppNavigation(
                     dismissText = "İptal",
                     onConfirm = {
                         showExitConfirmation = false
+                        // Reset session state and restart observers
+                        cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
+                        if (coupleId.isNotEmpty() && currentUserGender != null) {
+                            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
+                        }
                         currentScreen = Screen.RecipeList
                     },
                     onDismiss = {
@@ -404,7 +409,14 @@ fun AppNavigation(
 
                     CookingScreenHeader(
                         recipeName = recipeName,
-                        onBack = { currentScreen = Screen.RecipeList }
+                        onBack = {
+                            // Reset session state and restart observers
+                            cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
+                            if (coupleId.isNotEmpty() && currentUserGender != null) {
+                                cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
+                            }
+                            currentScreen = Screen.RecipeList
+                        }
                     )
                 }
             ) { modifier ->
@@ -412,7 +424,14 @@ fun AppNavigation(
                 CookingSessionScreen(
                     state = cookingState,
                     onEvent = cookingSessionViewModel::onEvent,
-                    onBack = { currentScreen = Screen.RecipeList }
+                    onBack = {
+                        // Reset session state and restart observers
+                        cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
+                        if (coupleId.isNotEmpty() && currentUserGender != null) {
+                            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
+                        }
+                        currentScreen = Screen.RecipeList
+                    }
                 )
             }
         }

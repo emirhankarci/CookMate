@@ -1,5 +1,6 @@
 package com.emirhankarci.seninlemutfakta.data.model
 
+import com.google.firebase.database.Exclude
 import com.google.firebase.database.PropertyName
 
 data class StepProgress(
@@ -24,8 +25,10 @@ data class StepProgress(
     constructor() : this(0, false, 0, false, true, System.currentTimeMillis())
 
     // Helper functions
+    @Exclude
     fun isWaitingForPartner(): Boolean = isWaiting && isCompleted
 
+    @Exclude
     fun getTimeSinceCompletion(): Long {
         return if (isCompleted) System.currentTimeMillis() - completedAt else 0
     }

@@ -21,20 +21,16 @@ data class CookingSession(
     val startedAt: Long = System.currentTimeMillis(),
     val lastUpdated: Long = System.currentTimeMillis(),
     val femaleProgress: StepProgress = StepProgress(),
-    val maleProgress: StepProgress = StepProgress(),
-
-    // Firebase computed field - ignore during deserialization
-    @get:PropertyName("sessionActive")
-    @set:PropertyName("sessionActive")
-    var sessionActive: Boolean = false
+    val maleProgress: StepProgress = StepProgress()
 ) {
     constructor() : this(
         "", "", "", "", false, "", "", 0, 0,
         SessionStatus.WAITING, System.currentTimeMillis(),
-        System.currentTimeMillis(), StepProgress(), StepProgress(), false
+        System.currentTimeMillis(), StepProgress(), StepProgress()
     )
 
     // Helper functions
+    @Exclude
     fun getProgressByGender(gender: Gender): StepProgress {
         return when (gender) {
             Gender.FEMALE -> femaleProgress
@@ -42,6 +38,7 @@ data class CookingSession(
         }
     }
 
+    @Exclude
     fun getPartnerProgress(gender: Gender): StepProgress {
         return when (gender) {
             Gender.FEMALE -> maleProgress
@@ -49,6 +46,7 @@ data class CookingSession(
         }
     }
 
+    @Exclude
     fun canProceedToNextStep(): Boolean {
         return if (isCoopMode) {
             // Coop mode: İkisi de tamamlamalı
@@ -59,14 +57,17 @@ data class CookingSession(
         }
     }
 
+    @Exclude
     fun isSessionActive(): Boolean {
         return status == SessionStatus.IN_PROGRESS || status == SessionStatus.WAITING
     }
 
+    @Exclude
     fun isCompleted(): Boolean {
         return status == SessionStatus.COMPLETED
     }
 
+    @Exclude
     fun getProgressPercentage(): Int {
         return if (totalSteps > 0) {
             ((currentStep.toFloat() / totalSteps) * 100).toInt()

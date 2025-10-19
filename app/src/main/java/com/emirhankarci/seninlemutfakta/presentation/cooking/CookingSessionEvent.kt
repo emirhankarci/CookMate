@@ -61,6 +61,7 @@ sealed class CookingSessionEvent {
     // Session yönetimi
     object CancelWaitingSession : CookingSessionEvent()
     data class CleanUpOldSessions(val accountId: String) : CookingSessionEvent()
+    object ResetSessionState : CookingSessionEvent()
 
     // Hata durumunu temizle
     object ClearError : CookingSessionEvent()
