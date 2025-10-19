@@ -38,7 +38,6 @@ fun ProfileScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -47,11 +46,12 @@ fun ProfileScreen(
                         )
                     )
                 )
+                .statusBarsPadding()
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp, horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {

@@ -2,9 +2,12 @@ package com.emirhankarci.seninlemutfakta
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
+import androidx.core.view.WindowCompat
 import com.emirhankarci.seninlemutfakta.presentation.auth.AuthViewModel
 import com.emirhankarci.seninlemutfakta.presentation.cooking.CookingSessionViewModel
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewModel
@@ -24,6 +27,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable edge to edge with transparent status bar
+        enableEdgeToEdge()
 
         setContent {
             MaterialTheme {

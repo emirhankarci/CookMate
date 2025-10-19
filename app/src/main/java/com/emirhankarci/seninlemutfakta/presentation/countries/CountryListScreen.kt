@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -29,8 +30,24 @@ fun CountryListScreen(
     val state by viewModel.state.collectAsState()
     var selectedFilter by remember { mutableStateOf("All Countries") }
 
+    // DEĞİŞİKLİK 1: Gradient Brush'ı buraya taşıdık.
+    val brush = remember {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFFFB6C1), // Light pink
+                Color(0xFFFF69B4), // Hot pink
+                Color(0xFFFF6B6B)  // Coral
+            )
+        )
+    }
+
     Column(
-        modifier = modifier.fillMaxSize()
+        // DEĞİŞİKLİK 2: Arka plan gradient'ini direkt olarak ekranın en dış
+        // container'ına (Column) uyguluyoruz. Bu sayede status bar dahil tüm
+        // ekran bu gradient ile kaplanacak.
+        modifier = modifier
+            .fillMaxSize()
+            .background(brush)
     ) {
         // Header with gradient
         CountryListHeader(
@@ -42,7 +59,9 @@ fun CountryListScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFFFF9F5)),
+                // DEĞİŞİKLİK 3: Soruna neden olan beyaz arka planı buradan kaldırdık.
+                // Artık bu Box şeffaf olduğu için arkasındaki Column'un gradient'i görünecek.
+                .background(Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -55,7 +74,7 @@ fun CountryListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Error: ${state.error}")
+                        Text("Error: ${state.error}", color = Color.White) // Metin rengini görünür yapalım
                         Button(
                             onClick = { viewModel.onEvent(CountryListEvent.Retry) },
                             colors = ButtonDefaults.buttonColors(
@@ -79,8 +98,8 @@ fun CountryListScreen(
                             "Locked" -> state.countries.filter { state.isCountryLocked(it.countryCode) }
                             "In Progress" -> state.countries.filter {
                                 !state.isCountryLocked(it.countryCode) &&
-                                state.getCompletedRecipesCount(it.countryCode) > 0 &&
-                                state.getCompletedRecipesCount(it.countryCode) < it.totalRecipes
+                                        state.getCompletedRecipesCount(it.countryCode) > 0 &&
+                                        state.getCompletedRecipesCount(it.countryCode) < it.totalRecipes
                             }
                             else -> state.countries
                         }
@@ -120,19 +139,13 @@ fun CountryListHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = gradientColors,
-                    start = Offset(0f, 0f),
-                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                )
-            )
-            .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+            .statusBarsPadding()
+            .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Title
         Text(
-            text = "Choose Your Culinary\nJourney",
+            text = "Choose Your Journey",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,

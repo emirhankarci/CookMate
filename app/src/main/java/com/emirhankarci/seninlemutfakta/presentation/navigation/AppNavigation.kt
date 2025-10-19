@@ -19,6 +19,7 @@ import com.emirhankarci.seninlemutfakta.presentation.cooking.screens.CoopModeSel
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListEvent
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListScreen
 import com.emirhankarci.seninlemutfakta.presentation.countries.CountryListViewModel
+import com.emirhankarci.seninlemutfakta.presentation.MainScaffold
 import com.emirhankarci.seninlemutfakta.presentation.profile.ProfileScreen
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListEvent
 import com.emirhankarci.seninlemutfakta.presentation.recipes.RecipeListScreen
@@ -75,83 +76,82 @@ fun AppNavigation(
         }
     }
 
-    // Determine if bottom nav should be shown
-    val shouldShowBottomNav = currentScreen in listOf(
-        Screen.CountryList,
-        Screen.RecipeList,
-        Screen.Profile
-    )
-
-    // Screens with bottom navigation
-    if (shouldShowBottomNav) {
-        Scaffold(
-            bottomBar = {
-                BottomNavigationBarTopLine(
-                    currentScreen = currentScreen,
-                    onNavigate = { screen -> currentScreen = screen }
+    // Use MainScaffold for all screens
+    when (currentScreen) {
+        Screen.CountryList -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { /* No back for home screen */ }
+            ) { modifier ->
+                CountryListScreen(
+                    viewModel = countryListViewModel,
+                    onCountryClick = { countryCode ->
+                        selectedCountry = countryCode
+                        recipeListViewModel.onEvent(
+                            RecipeListEvent.LoadRecipes(countryCode)
+                        )
+                        currentScreen = Screen.RecipeList
+                    },
+                    modifier = modifier
                 )
             }
-        ) { paddingValues ->
-            when (currentScreen) {
-                Screen.CountryList -> {
-                    CountryListScreen(
-                        viewModel = countryListViewModel,
-                        onCountryClick = { countryCode ->
-                            selectedCountry = countryCode
-                            recipeListViewModel.onEvent(
-                                RecipeListEvent.LoadRecipes(countryCode)
-                            )
-                            currentScreen = Screen.RecipeList
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
+        }
 
-                Screen.RecipeList -> {
-                    val recipeState by recipeListViewModel.state.collectAsState()
+        Screen.RecipeList -> {
+            val recipeState by recipeListViewModel.state.collectAsState()
 
-                    RecipeListScreen(
-                        viewModel = recipeListViewModel,
-                        onBack = { currentScreen = Screen.CountryList },
-                        onRecipeClick = { recipeId ->
-                            selectedRecipe = recipeId
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { currentScreen = Screen.CountryList }
+            ) { modifier ->
+                RecipeListScreen(
+                    viewModel = recipeListViewModel,
+                    onBack = { currentScreen = Screen.CountryList },
+                    onRecipeClick = { recipeId ->
+                        selectedRecipe = recipeId
 
-                            val recipe = recipeState.recipes.find { it.recipeId == recipeId }
-                            selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
+                        val recipe = recipeState.recipes.find { it.recipeId == recipeId }
+                        selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
 
-                            currentScreen = Screen.CoopModeSelection
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-
-                Screen.Profile -> {
-                    ProfileScreen(
-                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
-                        userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
-                        onLogout = {
-                            // Önce tüm Firebase listener'ları durdur
-                            cookingSessionViewModel.stopObservingWaitingSession()
-
-                            // Sonra logout yap
-                            authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
-                            coupleViewModel.clearCoupleData()
-                            currentUserGender = null
-                            currentScreen = Screen.Login
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-
-                else -> {
-                    // Should not happen, but handle gracefully
-                }
+                        currentScreen = Screen.CoopModeSelection
+                    },
+                    modifier = modifier
+                )
             }
         }
-    } else {
-        // Screens without bottom navigation
-        when (currentScreen) {
-            Screen.Login -> {
+
+        Screen.Profile -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { /* No back for profile */ }
+            ) { modifier ->
+                ProfileScreen(
+                    coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                    userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
+                    onLogout = {
+                        // Önce tüm Firebase listener'ları durdur
+                        cookingSessionViewModel.stopObservingWaitingSession()
+
+                        // Sonra logout yap
+                        authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
+                        coupleViewModel.clearCoupleData()
+                        currentUserGender = null
+                        currentScreen = Screen.Login
+                    },
+                    modifier = modifier
+                )
+            }
+        }
+
+        Screen.Login -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { /* No back for login */ }
+            ) { modifier ->
                 LoginScreen(
                     state = authState,
                     onEvent = authViewModel::onEvent,
@@ -159,8 +159,14 @@ fun AppNavigation(
                     onLoginSuccess = { currentScreen = Screen.UserSelection }
                 )
             }
+        }
 
-            Screen.Register -> {
+        Screen.Register -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { /* No back for register */ }
+            ) { modifier ->
                 RegisterScreen(
                     state = authState,
                     onEvent = authViewModel::onEvent,
@@ -168,8 +174,14 @@ fun AppNavigation(
                     onRegisterSuccess = { currentScreen = Screen.UserSelection }
                 )
             }
+        }
 
-            Screen.UserSelection -> {
+        Screen.UserSelection -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { /* No back for user selection */ }
+            ) { modifier ->
                 UserSelectionScreen(
                     coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
                     onGenderSelected = { gender ->
@@ -188,10 +200,16 @@ fun AppNavigation(
                     }
                 )
             }
+        }
 
-            Screen.CoopModeSelection -> {
-                val scope = rememberCoroutineScope()
+        Screen.CoopModeSelection -> {
+            val scope = rememberCoroutineScope()
 
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { currentScreen = Screen.RecipeList }
+            ) { modifier ->
                 CoopModeSelectionScreen(
                     recipeName = selectedRecipeName,
                     onSoloMode = {
@@ -255,17 +273,19 @@ fun AppNavigation(
                     }
                 )
             }
+        }
 
-            Screen.CookingSession -> {
+        Screen.CookingSession -> {
+            MainScaffold(
+                currentScreen = currentScreen,
+                onNavigate = { screen -> currentScreen = screen },
+                onBackClick = { currentScreen = Screen.RecipeList }
+            ) { modifier ->
                 CookingSessionScreen(
                     state = cookingState,
                     onEvent = cookingSessionViewModel::onEvent,
                     onBack = { currentScreen = Screen.RecipeList }
                 )
-            }
-
-            else -> {
-                // Should not happen
             }
         }
     }
