@@ -90,16 +90,29 @@ fun AppNavigation(
     }
 
     // Navigate to CookingSession when session status becomes IN_PROGRESS (for creator)
-    LaunchedEffect(cookingState.session?.status, cookingState.recipe, cookingState.isCreatorWaitingForPartner) {
+    // Track if we were waiting as creator before
+    var wasCreatorWaiting by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(cookingState.isCreatorWaitingForPartner) {
+        if (cookingState.isCreatorWaitingForPartner) {
+            wasCreatorWaiting = true
+        }
+    }
+    
+    LaunchedEffect(cookingState.session?.status, cookingState.session?.sessionId) {
         val session = cookingState.session
-        val recipe = cookingState.recipe
-        // Creator waiting for partner: Navigate when status becomes IN_PROGRESS
-        if (session != null &&
-            recipe != null &&
+        
+        // Creator waiting durumundayken session IN_PROGRESS oldu mu?
+        if (wasCreatorWaiting &&
+            session != null &&
             session.status == SessionStatus.IN_PROGRESS &&
-            currentScreen != Screen.CookingSession &&
-            cookingState.isCreatorWaitingForPartner) {
+            session.isCoopMode &&
+            currentScreen != Screen.CookingSession) {
+            
+            // Navigate to cooking session
             currentScreen = Screen.CookingSession
+            // Reset flag
+            wasCreatorWaiting = false
         }
     }
 
@@ -399,7 +412,9 @@ fun AppNavigation(
                                             currentUserGender = gender
                                         )
                                     )
-                                    // Navigation will happen automatically via LaunchedEffect when partner joins
+                                    // Creator waiting dialog gösterilirken RecipeList ekranına geç
+                                    // Böylece dialog kapandığında RecipeList görünür
+                                    currentScreen = Screen.RecipeList
                                 }
                             }
                         }
@@ -485,8 +500,8 @@ fun AppNavigation(
             partnerName = "Eşiniz",
             onCancel = {
                 cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
-                // Observer will be restarted automatically by ViewModel
-                currentScreen = Screen.RecipeList
+                // Partner red dediğinde CountryList'e dön
+                currentScreen = Screen.CountryList
             },
             onJoin = {
                 val session = cookingState.session
@@ -515,7 +530,8 @@ fun AppNavigation(
             recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
             onCancel = {
                 cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
-                // Observer will be restarted automatically by ViewModel
+                // Creator cancel dediğinde tarif ekranına (RecipeList) dön
+                // selectedCountry zaten set edilmiş durumda olmalı
                 currentScreen = Screen.RecipeList
             }
         )

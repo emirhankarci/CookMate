@@ -650,9 +650,20 @@ class CookingSessionViewModel @Inject constructor(
                         }
                     } else {
                         // Waiting session yok veya artık WAITING değil
+                        // Partner reddetmiş veya session iptal edilmiş
                         if (_state.value.showWaitingForPartnerDialog) {
                             _state.update {
                                 it.copy(showWaitingForPartnerDialog = false)
+                            }
+                        }
+                        
+                        // Eğer ben creator idim ve session artık WAITING değilse (reddedildi/iptal edildi)
+                        if (_state.value.isCreatorWaitingForPartner) {
+                            _state.update {
+                                it.copy(
+                                    isCreatorWaitingForPartner = false,
+                                    session = null
+                                )
                             }
                         }
                     }
