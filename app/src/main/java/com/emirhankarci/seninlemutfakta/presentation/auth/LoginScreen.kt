@@ -41,7 +41,6 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     // Handle back button - go to welcome
@@ -257,45 +256,6 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Remember Me and Forgot Password
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = rememberMe,
-                            onCheckedChange = { rememberMe = it },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFFFF6B6B)
-                            ),
-                            enabled = !state.isLoading
-                        )
-                        Text(
-                            text = "Beni Hatırla",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            if (email.isNotBlank()) {
-                                onEvent(AuthEvent.SendPasswordReset(email.trim()))
-                            }
-                        },
-                        enabled = !state.isLoading && email.isNotBlank()
-                    ) {
-                        Text(
-                            text = "Şifremi Unuttum?",
-                            fontSize = 12.sp,
-                            color = Color(0xFFFF6B6B)
-                        )
-                    }
-                }
-
                 // Error message
                 if (state.error != null) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -366,42 +326,6 @@ fun LoginScreen(
                             color = Color.White
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // OR CONTINUE WITH
-                Text(
-                    text = "VEYA ŞU ŞEKİLDE DEVAM ET",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Google Login Button (Placeholder)
-                OutlinedButton(
-                    onClick = { /* TODO: Google sign in */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color.Black,
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color.LightGray),
-                    enabled = !state.isLoading
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.google_icon),
-                        contentDescription = "Google Icon",
-                        modifier = Modifier.size(20.dp),
-                        tint = Color.Unspecified
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Google", fontSize = 14.sp)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
