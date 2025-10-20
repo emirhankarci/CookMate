@@ -31,6 +31,9 @@ class CookingSessionRepository @Inject constructor(
         return try {
             val sessionId = firebaseDataSource.generateSessionId()
 
+            // Solo modda direkt IN_PROGRESS başla, coop modda WAITING
+            val initialStatus = if (isCoopMode) SessionStatus.WAITING else SessionStatus.IN_PROGRESS
+
             val session = CookingSession(
                 sessionId = sessionId,
                 recipeId = recipeId,
@@ -41,7 +44,7 @@ class CookingSessionRepository @Inject constructor(
                 maleUserId = maleUserId,
                 currentStep = 0,
                 totalSteps = totalSteps,
-                status = SessionStatus.WAITING,
+                status = initialStatus,
                 startedAt = System.currentTimeMillis(),
                 lastUpdated = System.currentTimeMillis(),
                 femaleProgress = StepProgress(),
@@ -144,13 +147,24 @@ class CookingSessionRepository @Inject constructor(
         stepIndex: Int
     ): Result<Unit> {
         return try {
+            // Önce session'ı oku - solo mu coop mu kontrol et
+            val snapshot = firebaseDataSource.getCookingSessionRef(sessionId).get().await()
+            val session = snapshot.getValue(CookingSession::class.java)
+
+            if (session == null) {
+                return Result.failure(Exception("Session not found"))
+            }
+
             val progressPath = if (gender == Gender.FEMALE) "femaleProgress" else "maleProgress"
+
+            // Solo modda waiting false, coop modda true
+            val isWaiting = session.isCoopMode
 
             val updates = mapOf(
                 "$progressPath/currentStepIndex" to stepIndex,
                 "$progressPath/isCompleted" to true,
                 "$progressPath/completedAt" to System.currentTimeMillis(),
-                "$progressPath/isWaiting" to true,
+                "$progressPath/isWaiting" to isWaiting,
                 "lastUpdated" to System.currentTimeMillis()
             )
 

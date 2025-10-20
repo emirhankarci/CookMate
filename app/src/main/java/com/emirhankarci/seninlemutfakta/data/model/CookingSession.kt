@@ -52,8 +52,8 @@ data class CookingSession(
             // Coop mode: İkisi de tamamlamalı
             femaleProgress.isCompleted && maleProgress.isCompleted
         } else {
-            // Solo mode: Sadece aktif kullanıcı tamamlamalı
-            false  // Otomatik geçiş YOK, kullanıcı manuel "Sonraki Adım" basacak
+            // Solo mode: Aktif kullanıcı tamamladı mı kontrol et
+            femaleProgress.isCompleted || maleProgress.isCompleted
         }
     }
 

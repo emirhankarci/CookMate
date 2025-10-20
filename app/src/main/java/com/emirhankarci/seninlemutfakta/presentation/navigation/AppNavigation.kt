@@ -471,7 +471,8 @@ fun AppNavigation(
                             cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
                         }
                         currentScreen = Screen.RecipeList
-                    }
+                    },
+                    modifier = modifier
                 )
             }
         }

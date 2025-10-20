@@ -143,10 +143,6 @@ class CookingSessionViewModel @Inject constructor(
                                 )
                             }
 
-                            if (!isCoopMode) {
-                                cookingSessionRepository.startSession(sessionId)
-                            }
-
                             // Real-time dinlemeyi başlat
                             observeSession(sessionId)
 
@@ -414,10 +410,8 @@ class CookingSessionViewModel @Inject constructor(
                     println("🔍 Female completed: ${session.femaleProgress.isCompleted}")
                     println("🔍 Male completed: ${session.maleProgress.isCompleted}")
 
-                    // İkisi de tamamladıysa otomatik geç
-                    if (session.isCoopMode &&
-                        canProceed &&
-                        status == SessionStatus.IN_PROGRESS) {
+                    // Otomatik next step - solo mode veya coop mode'da ikisi de tamamladıysa
+                    if (canProceed && status == SessionStatus.IN_PROGRESS) {
                         delay(1000)
                         moveToNextStep()
                     }

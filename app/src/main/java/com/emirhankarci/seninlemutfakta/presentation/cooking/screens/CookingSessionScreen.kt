@@ -30,9 +30,10 @@ import com.emirhankarci.seninlemutfakta.presentation.cooking.PartnerConnectionSt
 fun CookingSessionScreen(
     state: CookingSessionState,
     onEvent: (CookingSessionEvent) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         when {
             state.isLoading -> {
                 CircularProgressIndicator(
@@ -53,7 +54,7 @@ fun CookingSessionScreen(
                 LoadingContent(message = "Session yükleniyor...")
             }
 
-            state.session.status == SessionStatus.WAITING -> {
+            state.session.status == SessionStatus.WAITING && state.session.isCoopMode -> {
                 WaitingForPartnerContent(
                     recipeName = state.recipe?.titleTurkish ?: state.recipe?.title ?: "",
                     onBack = onBack
@@ -68,7 +69,8 @@ fun CookingSessionScreen(
                 CookingContent(
                     state = state,
                     onEvent = onEvent,
-                    onBack = onBack
+                    onBack = onBack,
+                    modifier = Modifier
                 )
             }
         }
@@ -124,11 +126,12 @@ fun CookingScreenHeader(
 fun CookingContent(
     state: CookingSessionState,
     onEvent: (CookingSessionEvent) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFFFF9F5)) // Ana içeriğin arka planı doğru.
     ) {
