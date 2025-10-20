@@ -6,10 +6,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -25,10 +31,20 @@ import com.emirhankarci.seninlemutfakta.data.model.Gender
 
 @Composable
 fun UserSelectionScreen(
+    viewModel: UserSelectionViewModel,
+    userId: String,
+    coupleId: String,
     coupleName: String,
     onGenderSelected: (Gender) -> Unit,
     onLogout: () -> Unit
 ) {
+    val state by viewModel.state.collectAsState()
+
+    // Observe couple data for real-time profile lock updates
+    LaunchedEffect(coupleId) {
+        viewModel.onEvent(UserSelectionEvent.ObserveCouple(coupleId))
+    }
+
     // Disable back button
     BackHandler(enabled = true) {
         // Do nothing - back button is disabled
@@ -116,8 +132,14 @@ fun UserSelectionScreen(
             GenderButton(
                 iconRes = R.drawable.female_cook_icon,
                 label = "Kadın",
-                subtitle = "Sihir yapmaya hazır ol",
-                onClick = { onGenderSelected(Gender.FEMALE) }
+                subtitle = if (state.femaleProfileLocked) "Diğer cihazda kullanılıyor" else "Sihir yapmaya hazır ol",
+                isLocked = state.femaleProfileLocked,
+                onClick = {
+                    if (!state.femaleProfileLocked) {
+                        viewModel.onEvent(UserSelectionEvent.SelectGender(Gender.FEMALE, userId))
+                        onGenderSelected(Gender.FEMALE)
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -126,11 +148,37 @@ fun UserSelectionScreen(
             GenderButton(
                 iconRes = R.drawable.male_cook_icon,
                 label = "Erkek",
-                subtitle = "Sihir yapmaya hazır ol",
-                onClick = { onGenderSelected(Gender.MALE) }
+                subtitle = if (state.maleProfileLocked) "Diğer cihazda kullanılıyor" else "Sihir yapmaya hazır ol",
+                isLocked = state.maleProfileLocked,
+                onClick = {
+                    if (!state.maleProfileLocked) {
+                        viewModel.onEvent(UserSelectionEvent.SelectGender(Gender.MALE, userId))
+                        onGenderSelected(Gender.MALE)
+                    }
+                }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Emergency unlock button (only show if both profiles are locked)
+            if (state.femaleProfileLocked && state.maleProfileLocked) {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.onEvent(UserSelectionEvent.UnlockAllProfiles(coupleId))
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "⚠️ Tüm Kilitleri Temizle",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // Bottom text
             Row(
@@ -153,6 +201,7 @@ private fun GenderButton(
     @DrawableRes iconRes: Int,
     label: String,
     subtitle: String,
+    isLocked: Boolean = false,
     onClick: () -> Unit
 ) {
     Card(
@@ -160,15 +209,17 @@ private fun GenderButton(
             .fillMaxWidth()
             .height(120.dp)
             .shadow(
-                elevation = 8.dp,
+                elevation = if (isLocked) 4.dp else 8.dp,
                 shape = RoundedCornerShape(24.dp),
                 spotColor = Color(0xFFFF69B4).copy(alpha = 0.3f)
-            ),
+            )
+            .alpha(if (isLocked) 0.5f else 1f),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFF9F5) // Cream white
+            containerColor = if (isLocked) Color(0xFFE0E0E0) else Color(0xFFFFF9F5) // Gray if locked
         ),
-        onClick = onClick
+        onClick = onClick,
+        enabled = !isLocked
     ) {
         Row(
             modifier = Modifier
@@ -177,12 +228,26 @@ private fun GenderButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Icon
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = label,
-                modifier = Modifier.size(64.dp)
-            )
+            // Icon with lock overlay if locked
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = label,
+                    modifier = Modifier.size(64.dp)
+                )
+                if (isLocked) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .align(Alignment.Center),
+                        tint = Color(0xFF757575)
+                    )
+                }
+            }
 
             // Text content
             Column(
@@ -192,12 +257,12 @@ private fun GenderButton(
                     text = label,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2C3E50) // Dark charcoal
+                    color = if (isLocked) Color(0xFF757575) else Color(0xFF2C3E50)
                 )
                 Text(
                     text = subtitle,
                     fontSize = 14.sp,
-                    color = Color(0xFF95A5A6), // Warm gray
+                    color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF95A5A6),
                     fontWeight = FontWeight.Normal
                 )
             }

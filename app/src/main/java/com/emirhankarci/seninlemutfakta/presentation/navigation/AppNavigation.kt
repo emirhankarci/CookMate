@@ -46,7 +46,9 @@ fun AppNavigation(
     coupleViewModel: CoupleViewModel,
     countryListViewModel: CountryListViewModel,
     recipeListViewModel: RecipeListViewModel,
-    cookingSessionViewModel: CookingSessionViewModel
+    cookingSessionViewModel: CookingSessionViewModel,
+    userSelectionViewModel: com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionViewModel,
+    onUserGenderChanged: (Gender?, String?) -> Unit = { _, _ -> }
 ) {
     val authState by authViewModel.state.collectAsState()
     val coupleState by coupleViewModel.state.collectAsState()
@@ -107,6 +109,17 @@ fun AppNavigation(
 
             // Handle back button - go to user selection
             BackHandler {
+                // Unlock profile when going back to user selection
+                currentUserGender?.let { gender ->
+                    userSelectionViewModel.onEvent(
+                        com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionEvent.UnlockProfile(
+                            coupleId = coupleId,
+                            gender = gender
+                        )
+                    )
+                }
+                currentUserGender = null
+                onUserGenderChanged(null, null)
                 currentScreen = Screen.UserSelection
             }
 
@@ -199,10 +212,20 @@ fun AppNavigation(
                 // DEĞİŞİKLİK 3: ProfileScreen artık sadece logout fonksiyonuna ve modifier'a ihtiyaç duyuyor.
                 ProfileScreen(
                     onLogout = {
+                        // Unlock profile before logging out
+                        currentUserGender?.let { gender ->
+                            userSelectionViewModel.onEvent(
+                                com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionEvent.UnlockProfile(
+                                    coupleId = coupleId,
+                                    gender = gender
+                                )
+                            )
+                        }
                         cookingSessionViewModel.stopObservingWaitingSession()
                         authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
                         coupleViewModel.clearCoupleData()
                         currentUserGender = null
+                        onUserGenderChanged(null, null)
                         currentScreen = Screen.Welcome
                     },
                     modifier = modifier
@@ -255,16 +278,30 @@ fun AppNavigation(
                 topBar = {}
             ) { modifier ->
                 UserSelectionScreen(
+                    viewModel = userSelectionViewModel,
+                    userId = currentUserId,
+                    coupleId = coupleId,
                     coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
                     onGenderSelected = { gender ->
                         currentUserGender = gender
+                        onUserGenderChanged(gender, coupleId)
                         currentScreen = Screen.CountryList
                     },
                     onLogout = {
+                        // Unlock profile before logging out
+                        currentUserGender?.let { gender ->
+                            userSelectionViewModel.onEvent(
+                                com.emirhankarci.seninlemutfakta.presentation.auth.UserSelectionEvent.UnlockProfile(
+                                    coupleId = coupleId,
+                                    gender = gender
+                                )
+                            )
+                        }
                         cookingSessionViewModel.stopObservingWaitingSession()
                         authViewModel.onEvent(com.emirhankarci.seninlemutfakta.presentation.auth.AuthEvent.Logout)
                         coupleViewModel.clearCoupleData()
                         currentUserGender = null
+                        onUserGenderChanged(null, null)
                         currentScreen = Screen.Login
                     }
                 )

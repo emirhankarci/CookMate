@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./gradlew assembleDebug:*)",
       "Bash(tree \"C:\\Users\\Emirhan\\AndroidStudioProjects\\SeninleMutfakta\" -L 3 -I 'build|.gradle|.idea')",
-      "Bash(git restore app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/LoginScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/RegisterScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/UserSelectionScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/cooking/screens/CookingSessionScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/navigation/AppNavigation.kt)"
+      "Bash(git restore app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/LoginScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/RegisterScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/auth/UserSelectionScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/cooking/screens/CookingSessionScreen.kt app/src/main/java/com/emirhankarci/seninlemutfakta/presentation/navigation/AppNavigation.kt)",
+      "Bash(find \"C:\\Users\\Emirhan\\AndroidStudioProjects\\SeninleMutfakta\\app\\src\\main\\java\" -name \"*.kt\" -type f -exec grep -l \"enum.*Gender\\|Gender.*enum\" {} ;)"
     ],
     "deny": [],
     "ask": []

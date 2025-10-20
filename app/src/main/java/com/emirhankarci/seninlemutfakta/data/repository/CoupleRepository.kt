@@ -4,6 +4,12 @@ import com.emirhankarci.seninlemutfakta.data.model.Couple
 import com.emirhankarci.seninlemutfakta.data.model.Gender
 import com.emirhankarci.seninlemutfakta.data.model.UserProfile
 import com.emirhankarci.seninlemutfakta.data.remote.FirebaseDataSource
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -107,6 +113,120 @@ class CoupleRepository @Inject constructor(
             }
 
             Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Profil kilitle
+    suspend fun lockProfile(
+        coupleId: String,
+        gender: Gender,
+        userId: String
+    ): Result<Unit> {
+        return try {
+            val coupleRef = firebaseDataSource.getCoupleRef(coupleId)
+
+            val updates = when (gender) {
+                Gender.FEMALE -> mapOf(
+                    "femaleProfileLocked" to true,
+                    "femaleProfileLockedBy" to userId
+                )
+                Gender.MALE -> mapOf(
+                    "maleProfileLocked" to true,
+                    "maleProfileLockedBy" to userId
+                )
+            }
+
+            // Lock the profile
+            coupleRef.updateChildren(updates).await()
+
+            // Set up auto-unlock on disconnect
+            val disconnectUpdates = when (gender) {
+                Gender.FEMALE -> mapOf(
+                    "femaleProfileLocked" to false,
+                    "femaleProfileLockedBy" to ""
+                )
+                Gender.MALE -> mapOf(
+                    "maleProfileLocked" to false,
+                    "maleProfileLockedBy" to ""
+                )
+            }
+
+            // This will automatically unlock the profile when connection is lost
+            coupleRef.onDisconnect().updateChildren(disconnectUpdates).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Profil kilidini aç
+    suspend fun unlockProfile(
+        coupleId: String,
+        gender: Gender
+    ): Result<Unit> {
+        return try {
+            val coupleRef = firebaseDataSource.getCoupleRef(coupleId)
+
+            val updates = when (gender) {
+                Gender.FEMALE -> mapOf(
+                    "femaleProfileLocked" to false,
+                    "femaleProfileLockedBy" to ""
+                )
+                Gender.MALE -> mapOf(
+                    "maleProfileLocked" to false,
+                    "maleProfileLockedBy" to ""
+                )
+            }
+
+            coupleRef.updateChildren(updates).await()
+
+            // Cancel the onDisconnect trigger since we're manually unlocking
+            coupleRef.onDisconnect().cancel().await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Real-time couple data dinle
+    fun observeCouple(coupleId: String): Flow<Couple?> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val couple = snapshot.getValue(Couple::class.java)
+                trySend(couple)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        firebaseDataSource.getCoupleRef(coupleId).addValueEventListener(listener)
+
+        awaitClose {
+            firebaseDataSource.getCoupleRef(coupleId).removeEventListener(listener)
+        }
+    }
+
+    // Tüm profil kilitlerini temizle (acil durum için)
+    suspend fun unlockAllProfiles(coupleId: String): Result<Unit> {
+        return try {
+            val updates = mapOf(
+                "femaleProfileLocked" to false,
+                "femaleProfileLockedBy" to "",
+                "maleProfileLocked" to false,
+                "maleProfileLockedBy" to ""
+            )
+
+            firebaseDataSource.getCoupleRef(coupleId)
+                .updateChildren(updates)
+                .await()
+
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
