@@ -345,6 +345,9 @@ fun AppNavigation(
             ) { modifier ->
                 CoopModeSelectionScreen(
                     recipeName = selectedRecipeName,
+                    onDismiss = {
+                        currentScreen = Screen.RecipeList
+                    },
                     onSoloMode = {
                         isCoopMode = false
                         currentUserGender?.let { gender ->

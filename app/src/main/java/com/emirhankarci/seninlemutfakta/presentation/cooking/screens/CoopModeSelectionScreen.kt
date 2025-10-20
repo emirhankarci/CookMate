@@ -7,11 +7,12 @@ import com.emirhankarci.seninlemutfakta.presentation.cooking.components.CoopMode
 fun CoopModeSelectionScreen(
     recipeName: String,
     onSoloMode: () -> Unit,
-    onCoopMode: () -> Unit
+    onCoopMode: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     CoopModeDialog(
         recipeName = recipeName,
-        onDismiss = onSoloMode,
+        onDismiss = onDismiss,
         onSoloMode = onSoloMode,
         onCoopMode = onCoopMode
     )
