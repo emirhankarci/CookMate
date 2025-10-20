@@ -201,7 +201,15 @@ class CoupleRepository @Inject constructor(
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                // Permission hatası (logout sonrası) normal bir durum, crash etme
+                // Sadece flow'u kapat
+                if (error.code == DatabaseError.PERMISSION_DENIED) {
+                    // Kullanıcı logout olmuş, sessizce kapat
+                    close()
+                } else {
+                    // Diğer hatalar için exception fırlat
+                    close(error.toException())
+                }
             }
         }
 
