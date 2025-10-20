@@ -475,4 +475,19 @@ fun AppNavigation(
             }
         )
     }
+
+    // Show dialog when partner leaves during cooking session
+    if (cookingState.showPartnerLeftDialog) {
+        com.emirhankarci.seninlemutfakta.presentation.cooking.components.PartnerLeftDialog(
+            onBackToRecipes = {
+                cookingSessionViewModel.onEvent(CookingSessionEvent.DismissPartnerLeftDialog)
+                // Reset session state and restart observers
+                cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
+                if (coupleId.isNotEmpty() && currentUserGender != null) {
+                    cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
+                }
+                currentScreen = Screen.RecipeList
+            }
+        )
+    }
 }

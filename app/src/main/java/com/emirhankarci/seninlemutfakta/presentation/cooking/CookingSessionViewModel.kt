@@ -75,6 +75,7 @@ class CookingSessionViewModel @Inject constructor(
             is CookingSessionEvent.DismissCoopDialog -> dismissCoopDialog()
             is CookingSessionEvent.DismissWaitingDialog -> dismissWaitingDialog()
             is CookingSessionEvent.DismissCompletionDialog -> dismissCompletionDialog()
+            is CookingSessionEvent.DismissPartnerLeftDialog -> dismissPartnerLeftDialog()
 
             // Session management
             is CookingSessionEvent.CancelWaitingSession -> cancelWaitingSession()
@@ -688,19 +689,21 @@ class CookingSessionViewModel @Inject constructor(
         timeoutCheckJob?.cancel()
 
         timeoutCheckJob = viewModelScope.launch {
+            var wasOnline = true // Partner'ın önceki durumu
+            
             while (true) {
                 delay(5000) // Her 5 saniyede kontrol et
 
                 val session = _state.value.session
                 val currentGender = _state.value.currentUserGender
 
-                if (session != null && session.isCoopMode) {
+                if (session != null && session.isCoopMode && session.status == SessionStatus.IN_PROGRESS) {
                     val partnerProgress = session.getPartnerProgress(currentGender)
 
-                    // Partner timeout kontrolü (60 saniye)
+                    // Partner timeout kontrolü (15 saniye - daha kısa süre)
                     val isTimeout = cookingSessionRepository.isPartnerTimeout(
                         lastSeen = partnerProgress.lastSeen,
-                        timeoutSeconds = 60  //  60 saniye
+                        timeoutSeconds = 15  // 15 saniye
                     )
 
                     val newStatus = when {
@@ -709,9 +712,27 @@ class CookingSessionViewModel @Inject constructor(
                         else -> PartnerConnectionStatus.ONLINE
                     }
 
-                    _state.update {
-                        it.copy(partnerConnectionStatus = newStatus)
+                    // Partner online'dan offline/disconnected'a geçti mi?
+                    val partnerLeft = wasOnline && (newStatus == PartnerConnectionStatus.OFFLINE || newStatus == PartnerConnectionStatus.DISCONNECTED)
+                    
+                    if (partnerLeft && !_state.value.showPartnerLeftDialog) {
+                        // Partner çıktı, session'ı iptal et ve dialog göster
+                        cookingSessionRepository.cancelWaitingSession(session.sessionId)
+                        
+                        _state.update {
+                            it.copy(
+                                partnerConnectionStatus = newStatus,
+                                showPartnerLeftDialog = true
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(partnerConnectionStatus = newStatus)
+                        }
                     }
+                    
+                    // Durumu güncelle
+                    wasOnline = newStatus == PartnerConnectionStatus.ONLINE
                 }
             }
         }
@@ -734,12 +755,30 @@ class CookingSessionViewModel @Inject constructor(
         _state.update { it.copy(showCompletionDialog = false) }
     }
 
+    private fun dismissPartnerLeftDialog() {
+        _state.update { it.copy(showPartnerLeftDialog = false) }
+    }
+
     private fun clearError() {
         _state.update { it.copy(error = null) }
     }
 
     // Session tamamlandıkında veya geri dönüldüğünde state'i temizle
     fun resetSessionState() {
+        // Mark user as offline before cleaning up
+        viewModelScope.launch {
+            val session = _state.value.session
+            val currentGender = _state.value.currentUserGender
+            
+            if (session != null) {
+                cookingSessionRepository.updateOnlineStatus(
+                    sessionId = session.sessionId,
+                    gender = currentGender,
+                    isOnline = false
+                )
+            }
+        }
+        
         // Cancel all observers
         sessionObserverJob?.cancel()
         connectionCheckJob?.cancel()

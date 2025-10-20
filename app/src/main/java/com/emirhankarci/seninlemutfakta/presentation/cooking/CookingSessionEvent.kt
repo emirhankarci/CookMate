@@ -56,6 +56,7 @@ sealed class CookingSessionEvent {
     object DismissCoopDialog : CookingSessionEvent()
     object DismissWaitingDialog : CookingSessionEvent()
     object DismissCompletionDialog : CookingSessionEvent()
+    object DismissPartnerLeftDialog : CookingSessionEvent()
     object ShowCoopModeDialog : CookingSessionEvent()
 
     // Session yönetimi

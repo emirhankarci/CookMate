@@ -27,6 +27,7 @@ data class CookingSessionState(
     val showCoopModeDialog: Boolean = false,
     val showWaitingForPartnerDialog: Boolean = false,
     val showCompletionDialog: Boolean = false,
+    val showPartnerLeftDialog: Boolean = false,
     val isCreatorWaitingForPartner: Boolean = false
 ) {
     // Helper: Benim adımım tamamlandı mı?
