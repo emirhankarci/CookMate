@@ -465,6 +465,16 @@ fun AppNavigation(
                     CookingScreenHeader(
                         recipeName = recipeName,
                         onBack = {
+                            // Session'dan country ve recipe bilgisini al
+                            val sessionCountry = cookingState.session?.countryCode
+                            if (sessionCountry != null && sessionCountry.isNotEmpty()) {
+                                selectedCountry = sessionCountry
+                                // Tarifleri yükle
+                                recipeListViewModel.onEvent(
+                                    RecipeListEvent.LoadRecipes(sessionCountry)
+                                )
+                            }
+                            
                             // Reset session state and restart observers
                             cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
                             if (coupleId.isNotEmpty() && currentUserGender != null) {
@@ -480,6 +490,16 @@ fun AppNavigation(
                     state = cookingState,
                     onEvent = cookingSessionViewModel::onEvent,
                     onBack = {
+                        // Session'dan country ve recipe bilgisini al
+                        val sessionCountry = cookingState.session?.countryCode
+                        if (sessionCountry != null && sessionCountry.isNotEmpty()) {
+                            selectedCountry = sessionCountry
+                            // Tarifleri yükle
+                            recipeListViewModel.onEvent(
+                                RecipeListEvent.LoadRecipes(sessionCountry)
+                            )
+                        }
+                        
                         // Reset session state and restart observers
                         cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
                         if (coupleId.isNotEmpty() && currentUserGender != null) {
