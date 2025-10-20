@@ -485,6 +485,8 @@ fun AppNavigation(
             partnerName = "Eşiniz",
             onCancel = {
                 cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
+                // Observer will be restarted automatically by ViewModel
+                currentScreen = Screen.RecipeList
             },
             onJoin = {
                 val session = cookingState.session
@@ -513,6 +515,8 @@ fun AppNavigation(
             recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
             onCancel = {
                 cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
+                // Observer will be restarted automatically by ViewModel
+                currentScreen = Screen.RecipeList
             }
         )
     }

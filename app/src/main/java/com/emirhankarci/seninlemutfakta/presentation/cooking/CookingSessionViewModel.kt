@@ -31,6 +31,11 @@ class CookingSessionViewModel @Inject constructor(
     private var connectionObserverJob: Job? = null
     private var timeoutCheckJob: Job? = null
 
+    // Saved values for observer restart
+    private var savedCoupleId: String = ""
+    private var savedCurrentUserId: String = ""
+    private var savedCurrentUserGender: Gender? = null
+
 
     fun onEvent(event: CookingSessionEvent) {
         when (event) {
@@ -604,6 +609,11 @@ class CookingSessionViewModel @Inject constructor(
 
     // Couple için WAITING session'ı real-time dinle
     fun observeWaitingSessionForCouple(coupleId: String, currentUserId: String, currentUserGender: Gender?) {
+        // Save parameters for potential restart
+        savedCoupleId = coupleId
+        savedCurrentUserId = currentUserId
+        savedCurrentUserGender = currentUserGender
+
         waitingSessionObserverJob?.cancel()
 
         waitingSessionObserverJob = viewModelScope.launch {
@@ -621,10 +631,14 @@ class CookingSessionViewModel @Inject constructor(
                         if (!isCurrentUserWaiting) {
                             // Eğer zaten bir session'daysa dialog gösterme
                             val currentSession = _state.value.session
-                            // Only show dialog if no active session or if session is completed/cancelled
+                            // Only show dialog if:
+                            // 1. No session in state, OR
+                            // 2. Current session is completed/cancelled, OR
+                            // 3. The new session is different from current session (for re-invites)
                             if (currentSession == null || 
                                 currentSession.status == SessionStatus.COMPLETED || 
-                                currentSession.status == SessionStatus.CANCELLED) {
+                                currentSession.status == SessionStatus.CANCELLED ||
+                                currentSession.sessionId != session.sessionId) {
                                 _state.update {
                                     it.copy(
                                         session = session,
@@ -824,17 +838,37 @@ class CookingSessionViewModel @Inject constructor(
             if (session != null) {
                 cookingSessionRepository.deleteSession(session.sessionId)
                     .onSuccess {
+                        // Önce state'i temizle
                         _state.update {
                             it.copy(
                                 session = null,
-                                showWaitingForPartnerDialog = false
+                                showWaitingForPartnerDialog = false,
+                                isCreatorWaitingForPartner = false
                             )
                         }
                     }
                     .onFailure { e ->
-                        _state.update { it.copy(error = e.message ?: "Session iptal edilemedi") }
+                        _state.update { 
+                            it.copy(
+                                session = null,
+                                showWaitingForPartnerDialog = false,
+                                isCreatorWaitingForPartner = false,
+                                error = e.message ?: "Session iptal edilemedi"
+                            ) 
+                        }
                     }
+            } else {
+                // Session yoksa sadece dialogları kapat
+                _state.update {
+                    it.copy(
+                        showWaitingForPartnerDialog = false,
+                        isCreatorWaitingForPartner = false
+                    )
+                }
             }
+            
+            // Observer devam etsin - yeniden başlatmaya gerek yok
+            // observeWaitingSessionForCouple zaten çalışmaya devam edecek
         }
     }
 
