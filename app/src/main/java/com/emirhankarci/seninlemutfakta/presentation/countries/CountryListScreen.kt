@@ -30,6 +30,11 @@ fun CountryListScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    // Ekran gösterildiğinde ülkeleri yükle (Firebase Auth hazır olduktan sonra)
+    LaunchedEffect(Unit) {
+        viewModel.loadCountriesIfNeeded()
+    }
+
     // DEĞİŞİKLİK 1: Bu Column artık SADECE ana içerik alanını temsil ediyor.
     // Bu yüzden arka planını orijinal beyazımsı renge ayarlıyoruz.
     Column(

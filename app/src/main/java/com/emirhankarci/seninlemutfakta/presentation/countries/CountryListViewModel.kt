@@ -18,9 +18,9 @@ class CountryListViewModel @Inject constructor(
     private val _state = MutableStateFlow(CountryListState())
     val state = _state.asStateFlow()
 
-    init {
-        loadCountries()
-    }
+    private var hasLoadedOnce = false
+
+    // init bloğunu kaldırdık - manuel tetikleme ile yüklenecek
 
     fun onEvent(event: CountryListEvent) {
         when (event) {
@@ -28,6 +28,14 @@ class CountryListViewModel @Inject constructor(
             is CountryListEvent.UnlockCountry -> unlockCountry(event.countryCode)
             is CountryListEvent.SelectCountry -> selectCountry(event.countryCode)
             is CountryListEvent.Retry -> loadCountries()
+        }
+    }
+
+    // Ekran ilk gösterildiğinde çağrılacak
+    fun loadCountriesIfNeeded() {
+        if (!hasLoadedOnce && _state.value.countries.isEmpty() && !_state.value.isLoading) {
+            hasLoadedOnce = true
+            loadCountries()
         }
     }
 
@@ -46,11 +54,20 @@ class CountryListViewModel @Inject constructor(
                     }
                 }
                 .onFailure { exception ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = exception.message ?: "Bilinmeyen hata"
-                        )
+                    val errorMessage = exception.message ?: "Bilinmeyen hata"
+
+                    // Permission denied hatası alırsak, Firebase Auth henüz hazır değil demektir
+                    // 1 saniye bekleyip otomatik retry yapalım
+                    if (errorMessage.contains("permission", ignoreCase = true) && !hasLoadedOnce) {
+                        kotlinx.coroutines.delay(1000) // 1 saniye bekle
+                        loadCountries() // Tekrar dene
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = errorMessage
+                            )
+                        }
                     }
                 }
         }
