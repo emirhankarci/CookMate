@@ -1,6 +1,6 @@
 # Test Suite Summary
 
-Bu dokümanda SeninleMutfakta uygulaması için oluşturulan test suite'i ve kurulum detayları açıklanmıştır.
+Bu dokümanda CookMate uygulaması için oluşturulan test suite'i ve kurulum detayları açıklanmıştır.
 
 ## ✅ Tamamlanan İşlemler - GÜNCELLENDİ
 
@@ -183,7 +183,7 @@ BUILD SUCCESSFUL in 1m 5s
 
 ```
 app/src/
-├── test/java/com/emirhankarci/seninlemutfakta/
+├── test/java/com/emirhankarci/cookmate/
 │   ├── data/
 │   │   └── repository/
 │   │       ├── AuthRepositoryTest.kt ✅
@@ -195,7 +195,7 @@ app/src/
 │       │   └── CookingSessionViewModelTest.kt ⚠️
 │       └── recipes/
 │           └── RecipeListViewModelTest.kt ⚠️
-└── androidTest/java/com/emirhankarci/seninlemutfakta/
+└── androidTest/java/com/emirhankarci/cookmate/
     └── presentation/
         └── auth/
             └── LoginScreenTest.kt ⚠️

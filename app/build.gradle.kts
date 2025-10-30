@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.emirhankarci.seninlemutfakta"
+    namespace = "com.emirhankarci.cookmate"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.emirhankarci.seninlemutfakta"
+        applicationId = "com.emirhankarci.cookmate"
         minSdk = 27
         targetSdk = 36
         versionCode = 1

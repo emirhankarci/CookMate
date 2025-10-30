@@ -16,7 +16,7 @@ Testler, kodunuzun doğru çalışıp çalışmadığını otomatik olarak kontr
 1. Android Studio'yu aç
 2. Sol tarafta **Project** panelinde şu yolu izle:
    ```
-   app → src → test → java → com.emirhankarci.seninlemutfakta →
+   app → src → test → java → com.emirhankarci.cookmate →
    presentation → auth → AuthViewModelTest
    ```
 3. `AuthViewModelTest.kt` dosyasına çift tıkla
@@ -67,7 +67,7 @@ Tests passed: 11 of 11 tests - 2.5s
    app → src → test → java
    ```
 2. `java` klasörüne **sağ tıkla**
-3. **"Run 'Tests in 'seninlemutfakta...'"** seçeneğini seç
+3. **"Run 'Tests in 'cookmate...'"** seçeneğini seç
 4. Tüm 40 test çalışacak! 🚀
 
 ### Komut Satırı (Terminal):
@@ -313,7 +313,7 @@ fun `my first test`() = runTest {
       └─ src
          └─ test
             └─ java
-               └─ com.emirhankarci.seninlemutfakta
+               └─ com.emirhankarci.cookmate
                   └─ presentation
                      └─ auth
                         └─ 📄 AuthViewModelTest.kt (ÇİFT TIKLA)
