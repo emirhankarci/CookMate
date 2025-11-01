@@ -136,7 +136,7 @@ fun RegisterScreen(
 
                 // Title Text
                 Text(
-                    text = "Hesap Oluştur",
+                    text = "Create Account",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -145,7 +145,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Seninle Mutfakta'ya katıl",
+                    text = "Join Cook Mate",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
@@ -159,7 +159,7 @@ fun RegisterScreen(
                 ) {
                     Row {
                         Text(
-                            text = "Çift Adı",
+                            text = "Couple Name",
                             fontSize = 12.sp,
                             color = Color.Gray,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -195,7 +195,7 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("Örn: Ahmet & Ayşe", fontSize = 14.sp) },
+                        placeholder = { Text("E.g.: John & Jane", fontSize = 14.sp) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF5F5F5),
@@ -253,7 +253,7 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("ornek@email.com", fontSize = 14.sp) },
+                        placeholder = { Text("johndoe@email.com", fontSize = 14.sp) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -276,7 +276,7 @@ fun RegisterScreen(
                 ) {
                     Row {
                         Text(
-                            text = "Şifre",
+                            text = "Password",
                             fontSize = 12.sp,
                             color = Color.Gray,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -312,7 +312,7 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("Güçlü bir şifre oluşturun", fontSize = 14.sp) },
+                        placeholder = { Text("Create a strong password", fontSize = 14.sp) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -345,7 +345,7 @@ fun RegisterScreen(
                 ) {
                     Row {
                         Text(
-                            text = "Şifre Tekrarı",
+                            text = "Confirm Password",
                             fontSize = 12.sp,
                             color = Color.Gray,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -381,7 +381,7 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("Şifrenizi tekrar girin", fontSize = 14.sp) },
+                        placeholder = { Text("Re-enter your password", fontSize = 14.sp) },
                         singleLine = true,
                         visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -424,7 +424,7 @@ fun RegisterScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Kabul ediyorum ",
+                            text = "I agree ",
                             fontSize = 12.sp,
                             color = Color.Gray
                         )
@@ -434,7 +434,7 @@ fun RegisterScreen(
                             enabled = !state.isLoading
                         ) {
                             Text(
-                                text = "Kullanım Şartları",
+                                text = "Terms and Conditions",
                                 fontSize = 12.sp,
                                 color = Color(0xFFFF6B6B),
                                 fontWeight = FontWeight.Bold
@@ -531,7 +531,7 @@ fun RegisterScreen(
                         )
                     } else {
                         Text(
-                            text = "Hesap Oluştur",
+                            text = "Create Account",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -546,7 +546,7 @@ fun RegisterScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Zaten hesabın var mı? ",
+                        text = "Already have an account?",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -556,7 +556,7 @@ fun RegisterScreen(
                         enabled = !state.isLoading
                     ) {
                         Text(
-                            text = "Giriş Yap",
+                            text = "Log In",
                             fontSize = 12.sp,
                             color = Color(0xFFFF6B6B),
                             fontWeight = FontWeight.Bold

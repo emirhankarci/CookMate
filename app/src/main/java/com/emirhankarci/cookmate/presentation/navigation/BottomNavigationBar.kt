@@ -50,12 +50,12 @@ fun getBottomNavItems(): List<BottomNavItem> {
         BottomNavItem(
             route = Screen.CountryList,
             icon = R.drawable.ic_globe, // We'll create these icons
-            label = "Ülkeler"
+            label = "Countries"
         ),
         BottomNavItem(
             route = Screen.Profile,
             icon = R.drawable.ic_profile,
-            label = "Profil"
+            label = "Profile"
         )
     )
 }

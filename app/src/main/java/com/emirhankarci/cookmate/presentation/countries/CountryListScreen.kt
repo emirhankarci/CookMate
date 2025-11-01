@@ -30,13 +30,10 @@ fun CountryListScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Ekran gösterildiğinde ülkeleri yükle (Firebase Auth hazır olduktan sonra)
     LaunchedEffect(Unit) {
         viewModel.loadCountriesIfNeeded()
     }
 
-    // DEĞİŞİKLİK 1: Bu Column artık SADECE ana içerik alanını temsil ediyor.
-    // Bu yüzden arka planını orijinal beyazımsı renge ayarlıyoruz.
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -57,7 +54,6 @@ fun CountryListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Hata mesajının rengini daha koyu yapalım ki beyaz arka planda okunsun
                         Text("Error: ${state.error}", color = Color.DarkGray)
                         Button(
                             onClick = { viewModel.onEvent(CountryListEvent.Retry) },
@@ -112,8 +108,6 @@ fun CountryListHeader(
     selectedFilter: String,
     onFilterChange: (String) -> Unit
 ) {
-    // DEĞİŞİKLİK 2: Gradient fırçasını (Brush) doğrudan Header'ın içine taşıdık.
-    // Hatırladığım renkler bunlardı.
     val brush = remember {
         Brush.linearGradient(
             colors = listOf(
@@ -127,7 +121,6 @@ fun CountryListHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // DEĞİŞİKLİK 3: Mavi arka planı kaldırıp yerine pembe gradient'i uyguluyoruz.
             .background(brush)
             .statusBarsPadding()
             .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
@@ -235,7 +228,6 @@ fun CountryCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             if (isLocked) {
-                // Kilitli kartlar için basit layout
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -297,7 +289,6 @@ fun CountryCard(
                     }
                 }
             } else {
-                // Açık kartlar için mevcut layout
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

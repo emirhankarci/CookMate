@@ -86,7 +86,7 @@ fun WelcomeScreen(
             ) {
                 // Title
                 Text(
-                    text = "Seninle Mutfakta",
+                    text = "CookMate",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = darkGray,
@@ -94,7 +94,7 @@ fun WelcomeScreen(
                 )
 
                 Text(
-                    text = "Aşkla pişirin, birlikte tadın",
+                    text = "Cook with love, enjoy together.",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Normal,
                     color = darkGray.copy(alpha = 0.7f),
@@ -116,7 +116,7 @@ fun WelcomeScreen(
                     )
                 ) {
                     Text(
-                        text = "Kayıt Ol",
+                        text = "Sign Up",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -139,7 +139,7 @@ fun WelcomeScreen(
                     )
                 ) {
                     Text(
-                        text = "Giriş Yap",
+                        text = "Log In",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )

@@ -130,7 +130,7 @@ fun LoginScreen(
 
                 // Welcome Text
                 Text(
-                    text = "Hoş Geldin",
+                    text = "Welcome",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -139,7 +139,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Seninle Mutfakta'ya giriş yap",
+                    text = "Log in to CookMate",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
@@ -181,7 +181,7 @@ fun LoginScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("Email adresinizi girin", fontSize = 14.sp) },
+                        placeholder = { Text("Enter your email address", fontSize = 14.sp) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -203,7 +203,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Şifre",
+                        text = "Password",
                         fontSize = 12.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -232,7 +232,7 @@ fun LoginScreen(
                                     }
                                 }
                             },
-                        placeholder = { Text("Şifrenizi girin", fontSize = 14.sp) },
+                        placeholder = { Text("Enter your password", fontSize = 14.sp) },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -320,7 +320,7 @@ fun LoginScreen(
                         )
                     } else {
                         Text(
-                            text = "Giriş Yap",
+                            text = "Log In",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -335,7 +335,7 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Hesabın yok mu? ",
+                        text = "Don’t have an account?",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -345,7 +345,7 @@ fun LoginScreen(
                         enabled = !state.isLoading
                     ) {
                         Text(
-                            text = "Kayıt Ol",
+                            text = "Sign Up",
                             fontSize = 12.sp,
                             color = Color(0xFFFF6B6B),
                             fontWeight = FontWeight.Bold

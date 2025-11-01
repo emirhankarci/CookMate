@@ -28,24 +28,20 @@ fun RecipeListScreen(
     viewModel: RecipeListViewModel,
     onBack: () -> Unit,
     onRecipeClick: (String) -> Unit,
-    // DEĞİŞİKLİK 1: selectedFilter state'i artık dışarıdan parametre olarak geliyor.
     selectedFilter: RecipeFilter,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    // DEĞİŞİKLİK 2: 'selectedFilter' state yönetimi (remember) buradan kaldırıldı.
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            // DEĞİŞİKLİK 3: Arka planı orijinal beyazımsı renge ayarlıyoruz.
             .background(Color(0xFFFFF9F5))
     ) {
-        // DEĞİŞİKLİK 4: RecipeListHeader çağrısı buradan tamamen kaldırıldı.
 
         // Content
         Box(
-            modifier = Modifier.fillMaxSize(), // Arka planı üstteki Column'dan aldığı için buradan sildik.
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -75,7 +71,6 @@ fun RecipeListScreen(
                 }
 
                 else -> {
-                    // DEĞİŞİKLİK 5: Filtreleme işlemi artık parametreden gelen 'selectedFilter' değerine göre yapılıyor.
                     val filteredRecipes = state.getFilteredRecipes(selectedFilter)
 
                     if (filteredRecipes.isEmpty()) {
@@ -130,13 +125,9 @@ fun RecipeListHeader(
             .background(
                 brush = Brush.linearGradient(colors = gradientColors)
             )
-            // DEĞİŞİKLİK 6: Scaffold'un topBar'ı status bar'ı otomatik yönettiği için
-            // hardcoded üst padding'i kaldırıp standart padding veriyoruz.
             .statusBarsPadding()
             .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
     ) {
-        // Geri butonu artık Header'ın bir parçası değil, Scaffold'un navigationIcon'u olacak.
-        // Ancak burada da bırakabiliriz, tasarım tercihine bağlı. Şimdilik burada kalsın.
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,

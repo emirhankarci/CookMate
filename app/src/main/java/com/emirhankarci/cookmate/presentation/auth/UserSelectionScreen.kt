@@ -75,7 +75,7 @@ fun UserSelectionScreen(
                 .padding(top = 48.dp, end = 16.dp)
         ) {
             Text(
-                text = "Çıkış",
+                text = "Log Out",
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
@@ -111,7 +111,7 @@ fun UserSelectionScreen(
 
             // Title
             Text(
-                text = "Kim Pişiriyor?",
+                text = "Who’s Cooking?",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -120,7 +120,7 @@ fun UserSelectionScreen(
 
             // Subtitle
             Text(
-                text = "Devam etmek için profilini seç",
+                text = "Select your profile to continue",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
@@ -131,8 +131,8 @@ fun UserSelectionScreen(
             // Woman Button
             GenderButton(
                 iconRes = R.drawable.female_cook_icon,
-                label = "Kadın",
-                subtitle = if (state.femaleProfileLocked) "Diğer cihazda kullanılıyor" else "Sihir yapmaya hazır ol",
+                label = "Female",
+                subtitle = if (state.femaleProfileLocked) "In use on another device" else "Ready to work your magic?",
                 isLocked = state.femaleProfileLocked,
                 onClick = {
                     if (!state.femaleProfileLocked) {
@@ -147,8 +147,8 @@ fun UserSelectionScreen(
             // Man Button
             GenderButton(
                 iconRes = R.drawable.male_cook_icon,
-                label = "Erkek",
-                subtitle = if (state.maleProfileLocked) "Diğer cihazda kullanılıyor" else "Sihir yapmaya hazır ol",
+                label = "Male",
+                subtitle = if (state.maleProfileLocked) "In use on another device" else "Get ready to work your magic",
                 isLocked = state.maleProfileLocked,
                 onClick = {
                     if (!state.maleProfileLocked) {
@@ -186,7 +186,7 @@ fun UserSelectionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💕 Aynı mutfakta pişen, aynı kalpte yaşayan aşk 💕",
+                    text = "💕 Love that cooks in the same kitchen, lives in the same heart 💕",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
