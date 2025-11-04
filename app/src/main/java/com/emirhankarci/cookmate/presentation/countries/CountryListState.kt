@@ -7,7 +7,8 @@ data class CountryListState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val userUnlockedCountries: List<String> = listOf("france", "italy", "turkey"), // Başlangıçta açık olanlar
-    val completedRecipes: Map<String, Int> = emptyMap() // Her ülke için tamamlanan tarif sayısı
+    val completedRecipes: Map<String, Int> = emptyMap(), // Her ülke için tamamlanan tarif sayısı
+    val isGridView: Boolean = false // Grid view durumu
 ) {
     // Helper: Ülke kilitli mi kontrol et
     fun isCountryLocked(countryCode: String): Boolean {

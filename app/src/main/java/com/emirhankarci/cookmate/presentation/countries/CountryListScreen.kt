@@ -37,7 +37,6 @@ fun CountryListScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
-    var isGridView by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadCountriesIfNeeded()
@@ -87,7 +86,7 @@ fun CountryListScreen(
                         else -> state.countries
                     }
 
-                    if (isGridView) {
+                    if (state.isGridView) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.fillMaxSize(),
@@ -136,7 +135,7 @@ fun CountryListScreen(
         
         // Floating Action Button for view toggle
         FloatingActionButton(
-            onClick = { isGridView = !isGridView },
+            onClick = { viewModel.onEvent(CountryListEvent.ToggleViewMode) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
@@ -144,8 +143,8 @@ fun CountryListScreen(
             contentColor = Color.White
         ) {
             Icon(
-                imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
-                contentDescription = if (isGridView) "List View" else "Grid View"
+                imageVector = if (state.isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                contentDescription = if (state.isGridView) "List View" else "Grid View"
             )
         }
     }

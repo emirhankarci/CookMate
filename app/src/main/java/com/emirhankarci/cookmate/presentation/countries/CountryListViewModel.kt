@@ -28,6 +28,7 @@ class CountryListViewModel @Inject constructor(
             is CountryListEvent.UnlockCountry -> unlockCountry(event.countryCode)
             is CountryListEvent.SelectCountry -> selectCountry(event.countryCode)
             is CountryListEvent.Retry -> loadCountries()
+            is CountryListEvent.ToggleViewMode -> toggleViewMode()
         }
     }
 
@@ -95,5 +96,11 @@ class CountryListViewModel @Inject constructor(
         // Navigation burada yapılacak
         // Şimdilik sadece log
         println("Ülke seçildi: $countryCode")
+    }
+
+    private fun toggleViewMode() {
+        _state.update {
+            it.copy(isGridView = !it.isGridView)
+        }
     }
 }
