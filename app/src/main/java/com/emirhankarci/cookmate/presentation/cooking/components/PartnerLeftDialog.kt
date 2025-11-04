@@ -25,7 +25,7 @@ fun PartnerLeftDialog(
         },
         title = {
             Text(
-                text = "Eşiniz Ayrıldı",
+                text = "Your partner has left",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2C3E50),
@@ -38,14 +38,14 @@ fun PartnerLeftDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Eşiniz pişirme oturumundan ayrıldı.",
+                    text = "Your partner has left the cooking session.",
                     fontSize = 14.sp,
                     color = Color(0xFF95A5A6),
                     textAlign = TextAlign.Center,
                     lineHeight = 20.sp
                 )
                 Text(
-                    text = "Oturum sonlandırıldı.",
+                    text = "The session has ended.",
                     fontSize = 14.sp,
                     color = Color(0xFF95A5A6),
                     textAlign = TextAlign.Center,
@@ -63,7 +63,7 @@ fun PartnerLeftDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Ana Sayfaya Dön",
+                    text = "Return to Home Page",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp

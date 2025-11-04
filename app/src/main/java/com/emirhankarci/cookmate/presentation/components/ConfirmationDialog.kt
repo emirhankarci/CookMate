@@ -15,10 +15,10 @@ import androidx.compose.ui.window.Dialog
 
 @Composable
 fun ConfirmationDialog(
-    title: String = "Emin Misiniz?",
+    title: String = "Are you sure?",
     message: String,
-    confirmText: String = "Evet, Çık",
-    dismissText: String = "İptal",
+    confirmText: String = "Yes, Exit",
+    dismissText: String = "Cancel",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {

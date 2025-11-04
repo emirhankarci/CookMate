@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import com.emirhankarci.cookmate.R
 
 @Composable
@@ -119,9 +120,10 @@ fun LoginScreen(
                     color = Color(0xFFFF6B6B)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🍳",
-                            fontSize = 32.sp
+                        Image(
+                            painter = painterResource(id = R.drawable.appicon),
+                            contentDescription = "Logo",
+                            modifier = Modifier
                         )
                     }
                 }

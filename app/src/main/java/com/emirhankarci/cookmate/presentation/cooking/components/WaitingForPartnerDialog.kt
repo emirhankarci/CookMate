@@ -26,7 +26,7 @@ import com.emirhankarci.cookmate.presentation.components.ConfirmationDialog
 @Composable
 fun WaitingForPartnerDialog(
     recipeName: String,
-    partnerName: String = "Eşiniz",
+    partnerName: String = "Your Partner",
     onCancel: () -> Unit,
     onJoin: () -> Unit
 ) {
@@ -41,10 +41,10 @@ fun WaitingForPartnerDialog(
     // Show confirmation dialog when back is pressed
     if (showCancelConfirmation) {
         ConfirmationDialog(
-            title = "Emin Misiniz?",
-            message = "Eşinizi beklemeyi iptal etmek istediğinize emin misiniz? Oturum sona erecektir.",
-            confirmText = "Evet, Çık",
-            dismissText = "İptal",
+            title = "Are you sure?",
+            message = "Are you sure you want to cancel waiting for your partner? The session will end.",
+            confirmText = "Yes, Exit",
+            dismissText = "Cancel",
             onConfirm = {
                 showCancelConfirmation = false
                 onCancel()

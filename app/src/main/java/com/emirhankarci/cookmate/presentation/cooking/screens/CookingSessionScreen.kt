@@ -51,7 +51,7 @@ fun CookingSessionScreen(
             }
 
             state.session == null -> {
-                LoadingContent(message = "Session yükleniyor...")
+                LoadingContent(message = "Loading session...")
             }
 
             state.session.status == SessionStatus.WAITING && state.session.isCoopMode -> {
@@ -62,7 +62,7 @@ fun CookingSessionScreen(
             }
 
             state.currentStep == null -> {
-                LoadingContent(message = "Tarif yükleniyor...")
+                LoadingContent(message = "Loading recipe...")
             }
 
             else -> {
@@ -115,7 +115,7 @@ fun CookingScreenHeader(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.Transparent // Arka planı alttaki Box'tan alacak
+            containerColor = Color.Transparent
         ),
         modifier = Modifier.background(Brush.linearGradient(colors = gradientColors))
     )
@@ -133,10 +133,8 @@ fun CookingContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF9F5)) // Ana içeriğin arka planı doğru.
+            .background(Color(0xFFFFF9F5))
     ) {
-        // DEĞİŞİKLİK 2: Çakışmaya neden olan TopStatusBar çağrısı buradan tamamen kaldırıldı.
-        // Artık bu görev AppNavigation'daki MainScaffold'a ait.
 
         // Progress Indicator
         ProgressIndicator(

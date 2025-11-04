@@ -516,8 +516,8 @@ fun AppNavigation(
     // Show dialog for partner who needs to join
     if (cookingState.showWaitingForPartnerDialog && currentScreen != Screen.CookingSession) {
         WaitingForPartnerDialog(
-            recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
-            partnerName = "Eşiniz",
+            recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Recipe",
+            partnerName = "Your Partner",
             onCancel = {
                 cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
                 // Partner red dediğinde CountryList'e dön

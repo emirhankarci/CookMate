@@ -39,10 +39,10 @@ fun CreatorWaitingDialog(
     // Show confirmation dialog when back is pressed
     if (showCancelConfirmation) {
         ConfirmationDialog(
-            title = "Emin Misiniz?",
-            message = "Eşinizi beklemeyi iptal etmek istediğinize emin misiniz? Oturum sona erecektir.",
-            confirmText = "Evet, Çık",
-            dismissText = "İptal",
+            title = "Are you sure?",
+            message = "Are you sure you want to cancel waiting for your partner? The session will end.\n",
+            confirmText = "Yes, Exit",
+            dismissText = "Cancel",
             onConfirm = {
                 showCancelConfirmation = false
                 onCancel()

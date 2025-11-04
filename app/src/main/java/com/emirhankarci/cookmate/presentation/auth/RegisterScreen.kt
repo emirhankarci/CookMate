@@ -3,6 +3,7 @@ package com.emirhankarci.cookmate.presentation.auth
 import android.graphics.BlurMaskFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -125,9 +126,10 @@ fun RegisterScreen(
                     color = Color(0xFFFF6B6B)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🍳",
-                            fontSize = 32.sp
+                        Image(
+                            painter = painterResource(id = R.drawable.appicon),
+                            contentDescription = "Logo",
+                            modifier = Modifier
                         )
                     }
                 }

@@ -30,20 +30,19 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // DEĞİŞİKLİK 2: Ana Column artık SADECE içeriği barındırıyor. Header buradan kaldırıldı.
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White) // İçerik arka planı beyaz olarak kalıyor, bu doğru.
+            .background(Color.White)
             .verticalScroll(rememberScrollState())
-            .padding(top = 24.dp) // Header kaldırıldığı için üste biraz boşluk ekleyelim.
+            .padding(top = 24.dp)
     ) {
         // Profile options
         Column(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             Text(
-                text = "Ayarlar",
+                text = "Settings",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.Black,
@@ -52,36 +51,36 @@ fun ProfileScreen(
 
             ProfileMenuItem(
                 icon = Icons.Default.Favorite,
-                title = "Favori Tarifler",
-                subtitle = "Beğendiğiniz tarifleri görüntüleyin",
+                title = "Favorite Recipes",
+                subtitle = "View the recipes you like",
                 onClick = { /* TODO */ }
             )
 
             ProfileMenuItem(
                 icon = Icons.Default.DateRange,
-                title = "Yemek Geçmişi",
-                subtitle = "Yaptığınız tarifleri inceleyin",
+                title = "Cooking History",
+                subtitle = "Review the recipes you’ve made",
                 onClick = { /* TODO */ }
             )
 
             ProfileMenuItem(
                 icon = Icons.Default.Person,
-                title = "Çift Ayarları",
-                subtitle = "Çift bilgilerinizi yönetin",
+                title = "Couple Settings",
+                subtitle = "Manage your couple information",
                 onClick = { /* TODO */ }
             )
 
             ProfileMenuItem(
                 icon = Icons.Default.Notifications,
-                title = "Bildirimler",
-                subtitle = "Bildirim tercihlerinizi ayarlayın",
+                title = "Notifications",
+                subtitle = "Set your notification preferences",
                 onClick = { /* TODO */ }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Diğer",
+                text = "Other",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.Black,
@@ -90,15 +89,15 @@ fun ProfileScreen(
 
             ProfileMenuItem(
                 icon = Icons.Default.Info,
-                title = "Hakkında",
-                subtitle = "Uygulama hakkında bilgi edinin",
+                title = "About",
+                subtitle = "Learn more about the app",
                 onClick = { /* TODO */ }
             )
 
             ProfileMenuItem(
                 icon = Icons.Default.Share,
-                title = "Paylaş",
-                subtitle = "Uygulamayı arkadaşlarınızla paylaşın",
+                title = "Share",
+                subtitle = "Share the app with your friends",
                 onClick = { /* TODO */ }
             )
 
@@ -123,7 +122,7 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Çıkış Yap",
+                    text = "Log Out",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )

@@ -70,12 +70,12 @@ data class CookingSessionState(
     // Helper: Eş durumu mesajı
     fun getPartnerStatusMessage(): String {
         return when {
-            !isConnected -> "Bağlantı bekleniyor..."
-            partnerConnectionStatus == PartnerConnectionStatus.OFFLINE -> "Eşiniz çevrimdışı"
-            partnerConnectionStatus == PartnerConnectionStatus.DISCONNECTED -> "Eşiniz bağlantı kesildi"
-            isPartnerWaiting() -> "Eşiniz sizi bekliyor! ⏳"
-            isPartnerStepCompleted() -> "Eşiniz hazır! ✅"
-            else -> "Eşiniz yapıyor..."
+            !isConnected -> "Waiting for connection..."
+            partnerConnectionStatus == PartnerConnectionStatus.OFFLINE -> "Your partner is offline"
+            partnerConnectionStatus == PartnerConnectionStatus.DISCONNECTED -> "Your partner has disconnected"
+            isPartnerWaiting() -> "Your partner is waiting for you! ⏳"
+            isPartnerStepCompleted() -> "Your partner is ready! ✅"
+            else -> "Your partner is cooking..."
         }
     }
 }

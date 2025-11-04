@@ -12,8 +12,6 @@ import com.emirhankarci.cookmate.presentation.navigation.Screen
 fun MainScaffold(
     currentScreen: Screen,
     onNavigate: (Screen) -> Unit,
-    // DEĞİŞİKLİK 1: topBar artık dışarıdan verilecek bir Composable lambda.
-    // Varsayılan olarak boş bir lambda atayarak opsiyonel hale getiriyoruz.
     topBar: @Composable () -> Unit = {},
     content: @Composable (Modifier) -> Unit
 ) {
@@ -25,8 +23,6 @@ fun MainScaffold(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        // DEĞİŞİKLİK 2: Artık 'when' bloğu yok. Direkt olarak parametreden gelen
-        // topBar'ı kullanıyoruz.
         topBar = topBar,
         bottomBar = {
             if (shouldShowBottomNav) {

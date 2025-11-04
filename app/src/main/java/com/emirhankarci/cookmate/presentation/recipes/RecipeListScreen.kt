@@ -274,7 +274,7 @@ fun RecipeCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(if (isLocked) 200.dp else 240.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = cardColor
