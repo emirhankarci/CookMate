@@ -3,9 +3,15 @@ package com.emirhankarci.cookmate.presentation.countries
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,12 +37,13 @@ fun CountryListScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
+    var isGridView by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadCountriesIfNeeded()
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFFFF9F5))
@@ -69,38 +76,77 @@ fun CountryListScreen(
                 }
 
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(all = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        val filteredCountries = when (selectedFilter) {
-                            "Unlocked" -> state.countries.filter { !state.isCountryLocked(it.countryCode) }
-                            "Locked" -> state.countries.filter { state.isCountryLocked(it.countryCode) }
-                            "In Progress" -> state.countries.filter {
-                                !state.isCountryLocked(it.countryCode) &&
-                                        state.getCompletedRecipesCount(it.countryCode) > 0 &&
-                                        state.getCompletedRecipesCount(it.countryCode) < it.totalRecipes
-                            }
-                            else -> state.countries
+                    val filteredCountries = when (selectedFilter) {
+                        "Unlocked" -> state.countries.filter { !state.isCountryLocked(it.countryCode) }
+                        "Locked" -> state.countries.filter { state.isCountryLocked(it.countryCode) }
+                        "In Progress" -> state.countries.filter {
+                            !state.isCountryLocked(it.countryCode) &&
+                                    state.getCompletedRecipesCount(it.countryCode) > 0 &&
+                                    state.getCompletedRecipesCount(it.countryCode) < it.totalRecipes
                         }
+                        else -> state.countries
+                    }
 
-                        items(filteredCountries) { country ->
-                            CountryCard(
-                                country = country,
-                                isLocked = state.isCountryLocked(country.countryCode),
-                                completedRecipes = state.getCompletedRecipesCount(country.countryCode),
-                                totalRecipes = country.totalRecipes,
-                                onClick = {
-                                    if (!state.isCountryLocked(country.countryCode)) {
-                                        onCountryClick(country.countryCode)
+                    if (isGridView) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filteredCountries) { country ->
+                                CompactCountryCard(
+                                    country = country,
+                                    isLocked = state.isCountryLocked(country.countryCode),
+                                    completedRecipes = state.getCompletedRecipesCount(country.countryCode),
+                                    totalRecipes = country.totalRecipes,
+                                    onClick = {
+                                        if (!state.isCountryLocked(country.countryCode)) {
+                                            onCountryClick(country.countryCode)
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(all = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(filteredCountries) { country ->
+                                CountryCard(
+                                    country = country,
+                                    isLocked = state.isCountryLocked(country.countryCode),
+                                    completedRecipes = state.getCompletedRecipesCount(country.countryCode),
+                                    totalRecipes = country.totalRecipes,
+                                    onClick = {
+                                        if (!state.isCountryLocked(country.countryCode)) {
+                                            onCountryClick(country.countryCode)
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+        
+        // Floating Action Button for view toggle
+        FloatingActionButton(
+            onClick = { isGridView = !isGridView },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = Color(0xFFFF69B4),
+            contentColor = Color.White
+        ) {
+            Icon(
+                imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                contentDescription = if (isGridView) "List View" else "Grid View"
+            )
         }
     }
 }
@@ -424,6 +470,252 @@ fun CountryCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CompactCountryCard(
+    country: Country,
+    isLocked: Boolean,
+    completedRecipes: Int,
+    totalRecipes: Int,
+    onClick: () -> Unit
+) {
+    val progressPercentage = if (totalRecipes > 0) {
+        (completedRecipes.toFloat() / totalRecipes * 100).toInt()
+    } else 0
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f), // Kare kart
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) Color(0xFFE0E0E0) else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isLocked) 2.dp else 6.dp
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (isLocked) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Lock icon
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "🔒",
+                            fontSize = 24.sp
+                        )
+                    }
+
+                    // Country name
+                    Text(
+                        text = country.name,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF757575),
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Description
+                    Text(
+                        text = country.description,
+                        fontSize = 10.sp,
+                        color = Color(0xFF9E9E9E),
+                        textAlign = TextAlign.Center,
+                        maxLines = 2
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Unlock button
+                    Button(
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF757575),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "🔓 ${country.price}₺",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Badges row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Completion badge
+                        if (progressPercentage == 100) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFF4CAF50),
+                                modifier = Modifier.size(18.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "✓",
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.size(18.dp))
+                        }
+
+                        // Featured/New badge
+                        when (country.countryCode) {
+                            "france", "italy" -> CompactFeaturedBadge()
+                            "india" -> CompactNewBadge()
+                            else -> {}
+                        }
+                    }
+
+                    // Country flag - Badge ile bayrak arası spacing yok
+                    val flagResource = when (country.countryCode) {
+                        "france" -> R.raw.france_flag
+                        "italy" -> R.raw.italy_flag
+                        "turkey" -> R.raw.turkiye_flag
+                        "japan" -> R.raw.japan_flag
+                        "mexico" -> R.raw.mexico_flag
+                        else -> R.raw.france_flag
+                    }
+                    
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(flagResource))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(64.dp)
+                    )
+
+                    // Country name
+                    Text(
+                        text = country.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2C3E50),
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Description - Ülke adı ile açıklama arası spacing yok
+                    Text(
+                        text = country.description,
+                        fontSize = 8.sp,
+                        color = Color(0xFF95A5A6),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+
+                    // Progress info
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "$completedRecipes/$totalRecipes",
+                            fontSize = 9.sp,
+                            color = Color(0xFF95A5A6)
+                        )
+                        Text(
+                            text = "$progressPercentage%",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4)
+                        )
+                    }
+
+                    // Progress bar
+                    LinearProgressIndicator(
+                        progress = progressPercentage / 100f,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(1.5.dp)),
+                        color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4),
+                        trackColor = Color(0xFFE0E0E0)
+                    )
+
+
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactFeaturedBadge() {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFFFFD700)
+    ) {
+        val composition by rememberLottieComposition(
+            LottieCompositionSpec.RawRes(R.raw.feature_star)
+        )
+        val progress by animateLottieCompositionAsState(
+            composition = composition,
+            iterations = LottieConstants.IterateForever
+        )
+
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+fun CompactNewBadge() {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFFFF69B4)
+    ) {
+        Text(
+            text = "New",
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+        )
     }
 }
 
