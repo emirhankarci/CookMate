@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.graphics.RectangleShape
+import com.airbnb.lottie.compose.*
 import com.emirhankarci.cookmate.R
 import com.emirhankarci.cookmate.data.model.Gender
 
@@ -91,18 +93,24 @@ fun UserSelectionScreen(
         ) {
             // Logo/Icon
             Surface(
-                modifier = Modifier.size(120.dp),
-                shape = CircleShape,
+                modifier = Modifier.size(140.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 shadowElevation = 16.dp
             ) {
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.male_cook_icon),
-                        contentDescription = "Cook Icon",
-                        modifier = Modifier.size(72.dp)
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.user_choice))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(120.dp)
                     )
                 }
             }
