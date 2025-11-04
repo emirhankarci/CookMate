@@ -1,8 +1,12 @@
 package com.emirhankarci.cookmate.presentation.cooking.components
 
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +27,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.airbnb.lottie.compose.*
+import com.emirhankarci.cookmate.R
 
 @Composable
 fun CoopModeDialog(
@@ -54,6 +60,18 @@ fun CoopModeDialog(
             stiffness = Spring.StiffnessMedium
         ),
         label = "dialog_alpha"
+    )
+
+    // Pulse animation for Cook Together button
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "pulse_scale"
     )
 
     Dialog(
@@ -116,15 +134,15 @@ fun CoopModeDialog(
                         ) {
                             Text(
                                 text = "👩‍🍳",
-                                fontSize = 28.sp
+                                fontSize = 36.sp
                             )
                             Text(
                                 text = "💕",
-                                fontSize = 24.sp
+                                fontSize = 32.sp
                             )
                             Text(
                                 text = "👨‍🍳",
-                                fontSize = 28.sp
+                                fontSize = 36.sp
                             )
                         }
                     }
@@ -175,23 +193,26 @@ fun CoopModeDialog(
                         FeatureItem(
                             icon = "📱",
                             text = "Real-time sync",
-                            description = "Your progress updates instantly"
+                            description = "Your progress updates instantly",
+                            animationType = "cloud_sync"
                         )
                         FeatureItem(
                             icon = "👫",
                             text = "Different tasks",
-                            description = "Each person has their own steps"
+                            description = "Each person has their own steps",
+                            animationType = "different_tasks"
                         )
                         FeatureItem(
                             icon = "💬",
                             text = "Stay connected",
-                            description = "Cook together from anywhere"
+                            description = "Cook together from anywhere",
+                            animationType = "heart_jumping"
                         )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Primary Button - Cook Together
+                    // Primary Button - Cook Together with pulse animation
                     Button(
                         onClick = {
                             visible = false
@@ -199,7 +220,8 @@ fun CoopModeDialog(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp),
+                            .height(60.dp)
+                            .scale(pulseScale),
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent
@@ -309,14 +331,15 @@ fun CoopModeDialogPreview() {
 fun FeatureItem(
     icon: String,
     text: String,
-    description: String
+    description: String,
+    animationType: String = ""
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Icon background
+        // Icon background with Lottie animation
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -326,10 +349,38 @@ fun FeatureItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = icon,
-                fontSize = 20.sp
-            )
+            if (animationType.isNotEmpty()) {
+                val lottieRes = when (animationType) {
+                    "cloud_sync" -> R.raw.cloud_sync
+                    "different_tasks" -> R.raw.different_tasks
+                    "heart_jumping" -> R.raw.heart_jumping
+                    else -> null
+                }
+                
+                if (lottieRes != null) {
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieRes))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(36.dp)
+                    )
+                } else {
+                    Text(
+                        text = icon,
+                        fontSize = 20.sp
+                    )
+                }
+            } else {
+                Text(
+                    text = icon,
+                    fontSize = 20.sp
+                )
+            }
         }
 
         // Text content
