@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.compose.*
+import com.emirhankarci.cookmate.R
 import com.emirhankarci.cookmate.data.model.Country
 
 @Composable
@@ -330,10 +332,26 @@ fun CountryCard(
                         }
                     }
 
-                    // Country flag
-                    Text(
-                        text = country.flagEmoji,
-                        fontSize = 48.sp
+                    // Country flag - Lottie animation based on country code
+                    val flagResource = when (country.countryCode) {
+                        "france" -> R.raw.france_flag
+                        "italy" -> R.raw.italy_flag
+                        "turkey" -> R.raw.turkiye_flag
+                        "japan" -> R.raw.japan_flag
+                        "mexico" -> R.raw.mexico_flag
+                        else -> R.raw.france_flag // Default to france flag for other countries
+                    }
+                    
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(flagResource))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(96.dp)
                     )
 
                     // Country name
@@ -416,11 +434,24 @@ fun FeaturedBadge() {
         color = Color(0xFFFFD700) // Gold
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "⭐", fontSize = 12.sp)
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.feature_star)
+            )
+            val progress by animateLottieCompositionAsState(
+                composition = composition,
+                iterations = LottieConstants.IterateForever
+            )
+
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(24.dp)
+            )
+
             Text(
                 text = "Featured",
                 fontSize = 11.sp,
