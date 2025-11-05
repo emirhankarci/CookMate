@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.compose.*
+import com.emirhankarci.cookmate.R
 import com.emirhankarci.cookmate.data.model.Gender
 import com.emirhankarci.cookmate.data.model.SessionStatus
 import com.emirhankarci.cookmate.presentation.cooking.CookingSessionEvent
@@ -298,7 +300,7 @@ fun PremiumStepCard(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Image/Illustration Placeholder
+            // Lottie Animation based on step content
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -314,9 +316,45 @@ fun PremiumStepCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "🍳",
-                    fontSize = 64.sp
+                // Determine animation based on step description
+                val animationRes = when {
+                    step.description.contains("wash", ignoreCase = true) || 
+                    step.description.contains("clean", ignoreCase = true) -> R.raw.wash_the_veggies
+                    
+                    step.description.contains("cut", ignoreCase = true) || 
+                    step.description.contains("chop", ignoreCase = true) || 
+                    step.description.contains("dice", ignoreCase = true) -> R.raw.vegetable_cutting
+                    
+                    step.description.contains("heat", ignoreCase = true) || 
+                    step.description.contains("pan", ignoreCase = true) -> R.raw.heat_the_pan
+                    
+                    step.description.contains("add", ignoreCase = true) || 
+                    step.description.contains("put", ignoreCase = true) -> R.raw.add_food
+                    
+                    step.description.contains("sauté", ignoreCase = true) || 
+                    step.description.contains("saute", ignoreCase = true) || 
+                    step.description.contains("stir", ignoreCase = true) -> R.raw.saute_food
+                    
+                    step.description.contains("tomato", ignoreCase = true) -> R.raw.tomato
+                    
+                    step.description.contains("cook", ignoreCase = true) || 
+                    step.description.contains("simmer", ignoreCase = true) -> R.raw.cook_the_food
+                    
+                    currentUserGender == Gender.MALE -> R.raw.man_cooking
+                    currentUserGender == Gender.FEMALE -> R.raw.woman_cooking
+                    else -> R.raw.cook_the_food
+                }
+                
+                val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(animationRes))
+                val progress by animateLottieCompositionAsState(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever
+                )
+                
+                LottieAnimation(
+                    composition = composition,
+                    progress = { progress },
+                    modifier = Modifier.size(180.dp)
                 )
             }
 
@@ -347,25 +385,6 @@ fun PremiumStepCard(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2C3E50)
                     )
-
-                    // Coop mode indicator
-                    if (isCoopMode && currentUserGender != null) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (currentUserGender == Gender.FEMALE) "👩‍🍳" else "👨‍🍳",
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                text = "Your Task",
-                                fontSize = 12.sp,
-                                color = Color(0xFFFF69B4),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
                 }
             }
 
@@ -377,17 +396,6 @@ fun PremiumStepCard(
                 color = Color(0xFF2C3E50),
                 lineHeight = 26.sp
             )
-
-            // Step Details
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                StepDetailBadge(
-                    icon = "⏱️",
-                    text = "~${step.estimatedTime} min"
-                )
-            }
 
             // Tips Section (if available)
             if (step.tips.isNotEmpty()) {

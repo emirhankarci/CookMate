@@ -199,63 +199,6 @@ fun WaitingForPartnerDialog(
                         lineHeight = 34.sp
                     )
 
-                    // Partner Info Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFF0F5)
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 2.dp
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Partner avatar
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        color = Color(0xFFFFE8F0),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "👨‍🍳", fontSize = 28.sp)
-                            }
-
-                            // Partner details
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = partnerName,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2C3E50)
-                                )
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = "🟢", fontSize = 10.sp)
-                                    Text(
-                                        text = "Online · Cooking",
-                                        fontSize = 13.sp,
-                                        color = Color(0xFF95A5A6)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
                     // Recipe Details
                     Column(
                         modifier = Modifier.fillMaxWidth(),
