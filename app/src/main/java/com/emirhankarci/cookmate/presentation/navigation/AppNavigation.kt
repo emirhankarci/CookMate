@@ -1,45 +1,31 @@
 package com.emirhankarci.cookmate.presentation.navigation
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import com.emirhankarci.cookmate.data.model.Gender
-import com.emirhankarci.cookmate.data.model.SessionStatus
-import com.emirhankarci.cookmate.presentation.MainScaffold
+import com.emirhankarci.cookmate.presentation.auth.AuthEvent
 import com.emirhankarci.cookmate.presentation.auth.AuthViewModel
 import com.emirhankarci.cookmate.presentation.auth.LoginScreen
 import com.emirhankarci.cookmate.presentation.auth.RegisterScreen
 import com.emirhankarci.cookmate.presentation.auth.UserSelectionScreen
-import com.emirhankarci.cookmate.presentation.cooking.CookingSessionEvent
+import com.emirhankarci.cookmate.presentation.auth.UserSelectionViewModel
 import com.emirhankarci.cookmate.presentation.cooking.CookingSessionViewModel
-import com.emirhankarci.cookmate.presentation.cooking.components.WaitingForPartnerDialog
 import com.emirhankarci.cookmate.presentation.cooking.screens.CookingSessionScreen
 import com.emirhankarci.cookmate.presentation.cooking.screens.CoopModeSelectionScreen
-import com.emirhankarci.cookmate.presentation.countries.CountryListHeader
 import com.emirhankarci.cookmate.presentation.countries.CountryListScreen
 import com.emirhankarci.cookmate.presentation.countries.CountryListViewModel
 import com.emirhankarci.cookmate.presentation.couple.CoupleViewModel
 import com.emirhankarci.cookmate.presentation.profile.ProfileScreen
 import com.emirhankarci.cookmate.presentation.recipes.RecipeListEvent
-import com.emirhankarci.cookmate.presentation.recipes.RecipeListHeader
 import com.emirhankarci.cookmate.presentation.recipes.RecipeListScreen
 import com.emirhankarci.cookmate.presentation.recipes.RecipeListViewModel
-import kotlinx.coroutines.launch
-import com.emirhankarci.cookmate.presentation.recipes.RecipeFilter // DÜZELTME: Bu import satırı hatayı giderir.
-import com.emirhankarci.cookmate.presentation.cooking.screens.CookingScreenHeader
-import com.emirhankarci.cookmate.presentation.profile.ProfileHeader
 import com.emirhankarci.cookmate.presentation.welcome.WelcomeScreen
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation(
     authViewModel: AuthViewModel,
@@ -47,528 +33,184 @@ fun AppNavigation(
     countryListViewModel: CountryListViewModel,
     recipeListViewModel: RecipeListViewModel,
     cookingSessionViewModel: CookingSessionViewModel,
-    userSelectionViewModel: com.emirhankarci.cookmate.presentation.auth.UserSelectionViewModel,
-    onUserGenderChanged: (Gender?, String?) -> Unit = { _, _ -> }
+    userSelectionViewModel: UserSelectionViewModel
 ) {
+    val navController = rememberNavController()
     val authState by authViewModel.state.collectAsState()
-    val coupleState by coupleViewModel.state.collectAsState()
-
-    var currentScreen by remember {
-        mutableStateOf<Screen>(
-            if (!authState.isLoggedIn) Screen.Welcome else Screen.UserSelection
-        )
-    }
-
-    LaunchedEffect(authState.isLoggedIn) {
-        currentScreen = if (!authState.isLoggedIn) Screen.Welcome else Screen.UserSelection
-    }
-
-    var selectedCountry by remember { mutableStateOf("") }
-    var selectedRecipe by remember { mutableStateOf("") }
-    var selectedRecipeName by remember { mutableStateOf("") }
-    var isCoopMode by remember { mutableStateOf(false) }
-
-    val currentUserId = authState.currentUser?.uid ?: ""
-    var currentUserGender by remember { mutableStateOf<Gender?>(null) }
-    val coupleId = authState.currentUser?.uid ?: ""
-
-    val cookingState by cookingSessionViewModel.state.collectAsState()
-
-    LaunchedEffect(coupleId, currentUserGender) {
-        if (coupleId.isNotEmpty() && currentUserGender != null) {
-            // Clean up old sessions first
-            cookingSessionViewModel.cleanUpOldSessions(coupleId)
-            // Then start observing
-            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
-        }
-    }
-
-    LaunchedEffect(currentScreen) {
-        if (currentScreen == Screen.CookingSession) {
-            cookingSessionViewModel.stopObservingWaitingSession()
-        }
-    }
-
-    // Navigate to CookingSession when session status becomes IN_PROGRESS (for creator)
-    // Track if we were waiting as creator before
-    var wasCreatorWaiting by remember { mutableStateOf(false) }
     
-    LaunchedEffect(cookingState.isCreatorWaitingForPartner) {
-        if (cookingState.isCreatorWaitingForPartner) {
-            wasCreatorWaiting = true
-        }
-    }
+    // Determine start destination based on auth state
+    val startDestination = if (authState.isLoggedIn) Route.MainGraph else Route.AuthGraph
     
-    LaunchedEffect(cookingState.session?.status, cookingState.session?.sessionId) {
-        val session = cookingState.session
-        
-        // Creator waiting durumundayken session IN_PROGRESS oldu mu?
-        if (wasCreatorWaiting &&
-            session != null &&
-            session.status == SessionStatus.IN_PROGRESS &&
-            session.isCoopMode &&
-            currentScreen != Screen.CookingSession) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        // Auth Graph - Authentication flow
+        navigation<Route.AuthGraph>(
+            startDestination = Route.WelcomeScreen
+        ) {
+            composable<Route.WelcomeScreen> {
+                WelcomeScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(Route.LoginScreen)
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(Route.RegisterScreen)
+                    }
+                )
+            }
             
-            // Navigate to cooking session
-            currentScreen = Screen.CookingSession
-            // Reset flag
-            wasCreatorWaiting = false
-        }
-    }
-
-    when (currentScreen) {
-        Screen.CountryList -> {
-            var selectedFilter by remember { mutableStateOf("All Countries") }
-
-            // Handle back button - go to user selection
-            BackHandler {
-                // Unlock profile when going back to user selection
-                currentUserGender?.let { gender ->
-                    userSelectionViewModel.onEvent(
-                        com.emirhankarci.cookmate.presentation.auth.UserSelectionEvent.UnlockProfile(
-                            coupleId = coupleId,
-                            gender = gender
-                        )
-                    )
-                }
-                currentUserGender = null
-                onUserGenderChanged(null, null)
-                currentScreen = Screen.UserSelection
-            }
-
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                topBar = {
-                    CountryListHeader(
-                        selectedFilter = selectedFilter,
-                        onFilterChange = { newFilter -> selectedFilter = newFilter }
-                    )
-                }
-            ) { modifier ->
-                CountryListScreen(
-                    viewModel = countryListViewModel,
-                    onCountryClick = { countryCode ->
-                        selectedCountry = countryCode
-                        recipeListViewModel.onEvent(
-                            RecipeListEvent.LoadRecipes(countryCode)
-                        )
-                        currentScreen = Screen.RecipeList
-                    },
-                    selectedFilter = selectedFilter,
-                    modifier = modifier
-                )
-            }
-        }
-
-        Screen.RecipeList -> {
-            val recipeState by recipeListViewModel.state.collectAsState()
-            // DEĞİŞİKLİK 1: 'selectedFilter' state'ini buraya taşıdık.
-            var selectedFilter by remember { mutableStateOf(RecipeFilter.ALL) }
-
-            // Handle back button - go to country list
-            BackHandler {
-                currentScreen = Screen.CountryList
-            }
-
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                // DEĞİŞİKLİK 2: 'topBar' parametresine RecipeListHeader'ı veriyoruz.
-                topBar = {
-                    RecipeListHeader(
-                        countryName = recipeState.countryName,
-                        countryFlag = recipeState.countryFlagEmoji,
-                        totalRecipes = recipeState.recipes.size,
-                        completedRecipes = recipeState.getCompletedCount(),
-                        progressPercentage = recipeState.getProgressPercentage(),
-                        selectedFilter = selectedFilter,
-                        onFilterChange = { newFilter -> selectedFilter = newFilter },
-                        onBack = { currentScreen = Screen.CountryList }
-                    )
-                }
-            ) { modifier ->
-                // DEĞİŞİKLİK 3: RecipeListScreen'i yeni parametrelerle çağırıyoruz.
-                RecipeListScreen(
-                    viewModel = recipeListViewModel,
-                    onBack = { currentScreen = Screen.CountryList },
-                    onRecipeClick = { recipeId ->
-                        selectedRecipe = recipeId
-                        val recipe = recipeState.recipes.find { it.recipeId == recipeId }
-                        selectedRecipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
-                        currentScreen = Screen.CoopModeSelection
-                    },
-                    selectedFilter = selectedFilter, // State'i aşağıya paslıyoruz
-                    modifier = modifier
-                )
-            }
-        }
-
-        Screen.Profile -> {
-            // Handle back button - go to country list
-            BackHandler {
-                currentScreen = Screen.CountryList
-            }
-
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                // DEĞİŞİKLİK 2: 'topBar' slotunu yeni ProfileHeader'ımız ile değiştiriyoruz.
-                topBar = {
-                    ProfileHeader(
-                        userName = authState.currentUser?.email?.substringBefore("@") ?: "Kullanıcı",
-                        coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
-                        userGender = currentUserGender
-                    )
-                }
-            ) { modifier ->
-                // DEĞİŞİKLİK 3: ProfileScreen artık sadece logout fonksiyonuna ve modifier'a ihtiyaç duyuyor.
-                ProfileScreen(
-                    onLogout = {
-                        // Unlock profile before logging out
-                        currentUserGender?.let { gender ->
-                            userSelectionViewModel.onEvent(
-                                com.emirhankarci.cookmate.presentation.auth.UserSelectionEvent.UnlockProfile(
-                                    coupleId = coupleId,
-                                    gender = gender
-                                )
-                            )
-                        }
-                        cookingSessionViewModel.stopObservingWaitingSession()
-                        authViewModel.onEvent(com.emirhankarci.cookmate.presentation.auth.AuthEvent.Logout)
-                        coupleViewModel.clearCoupleData()
-                        currentUserGender = null
-                        onUserGenderChanged(null, null)
-                        currentScreen = Screen.Welcome
-                    },
-                    modifier = modifier
-                )
-            }
-        }
-
-        Screen.Welcome -> {
-            WelcomeScreen(
-                onNavigateToLogin = { currentScreen = Screen.Login },
-                onNavigateToRegister = { currentScreen = Screen.Register }
-            )
-        }
-
-        Screen.Login -> {
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                topBar = {}
-            ) { modifier ->
+            composable<Route.LoginScreen> {
+                val authState by authViewModel.state.collectAsState()
+                
                 LoginScreen(
                     state = authState,
                     onEvent = authViewModel::onEvent,
-                    onNavigateToRegister = { currentScreen = Screen.Register },
-                    onLoginSuccess = { currentScreen = Screen.UserSelection },
-                    onBackToWelcome = { currentScreen = Screen.Welcome }
+                    onNavigateToRegister = {
+                        navController.navigate(Route.RegisterScreen)
+                    },
+                    onLoginSuccess = {
+                        navController.navigate(Route.MainGraph) {
+                            popUpTo(Route.AuthGraph) { inclusive = true }
+                        }
+                    },
+                    onBackToWelcome = {
+                        navController.popBackStack()
+                    }
                 )
             }
-        }
-
-        Screen.Register -> {
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                topBar = {}
-            ) { modifier ->
+            
+            composable<Route.RegisterScreen> {
+                val authState by authViewModel.state.collectAsState()
+                
                 RegisterScreen(
                     state = authState,
                     onEvent = authViewModel::onEvent,
-                    onNavigateToLogin = { currentScreen = Screen.Login },
-                    onRegisterSuccess = { currentScreen = Screen.UserSelection }
+                    onNavigateToLogin = {
+                        navController.navigate(Route.LoginScreen)
+                    },
+                    onRegisterSuccess = {
+                        navController.navigate(Route.MainGraph) {
+                            popUpTo(Route.AuthGraph) { inclusive = true }
+                        }
+                    }
                 )
             }
         }
-
-        Screen.UserSelection -> {
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                topBar = {}
-            ) { modifier ->
+        
+        // Main App Graph - Main application flow
+        navigation<Route.MainGraph>(
+            startDestination = Route.UserSelectionScreen
+        ) {
+            composable<Route.UserSelectionScreen> {
+                val coupleState by coupleViewModel.state.collectAsState()
+                
                 UserSelectionScreen(
                     viewModel = userSelectionViewModel,
-                    userId = currentUserId,
-                    coupleId = coupleId,
-                    coupleName = coupleState.currentCouple?.coupleName ?: "Çiftiniz",
+                    userId = authState.currentUser?.uid ?: "",
+                    coupleId = authState.currentUser?.uid ?: "",
+                    coupleName = coupleState.currentCouple?.coupleName ?: "",
                     onGenderSelected = { gender ->
-                        currentUserGender = gender
-                        onUserGenderChanged(gender, coupleId)
-                        currentScreen = Screen.CountryList
+                        navController.navigate(Route.CountryListScreen)
                     },
                     onLogout = {
-                        // Unlock profile before logging out
-                        currentUserGender?.let { gender ->
-                            userSelectionViewModel.onEvent(
-                                com.emirhankarci.cookmate.presentation.auth.UserSelectionEvent.UnlockProfile(
-                                    coupleId = coupleId,
-                                    gender = gender
-                                )
-                            )
+                        authViewModel.onEvent(AuthEvent.Logout)
+                        navController.navigate(Route.AuthGraph) {
+                            popUpTo(Route.MainGraph) { inclusive = true }
                         }
-                        cookingSessionViewModel.stopObservingWaitingSession()
-                        authViewModel.onEvent(com.emirhankarci.cookmate.presentation.auth.AuthEvent.Logout)
-                        coupleViewModel.clearCoupleData()
-                        currentUserGender = null
-                        onUserGenderChanged(null, null)
-                        currentScreen = Screen.Login
                     }
                 )
             }
-        }
-
-        Screen.CoopModeSelection -> {
-            val scope = rememberCoroutineScope()
-
-            // Handle back button - go to recipe list
-            BackHandler {
-                currentScreen = Screen.RecipeList
-            }
-
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Text(
-                                text = currentScreen.title,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { currentScreen = Screen.RecipeList }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
+            
+            composable<Route.CountryListScreen> {
+                CountryListScreen(
+                    viewModel = countryListViewModel,
+                    onCountryClick = { countryCode ->
+                        recipeListViewModel.onEvent(
+                            RecipeListEvent.LoadRecipes(countryCode)
                         )
-                    )
-                }
-            ) { modifier ->
+                        navController.navigate(Route.RecipeListScreen(countryCode))
+                    },
+                    selectedFilter = "All Countries"
+                )
+            }
+            
+            composable<Route.RecipeListScreen> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.RecipeListScreen>()
+                
+                RecipeListScreen(
+                    viewModel = recipeListViewModel,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onRecipeClick = { recipeId ->
+                        val recipeState = recipeListViewModel.state.value
+                        val recipe = recipeState.recipes.find { it.recipeId == recipeId }
+                        val recipeName = recipe?.titleTurkish ?: recipe?.title ?: ""
+                        
+                        navController.navigate(
+                            Route.CoopModeSelectionScreen(
+                                recipeId = recipeId,
+                                recipeName = recipeName
+                            )
+                        )
+                    },
+                    selectedFilter = com.emirhankarci.cookmate.presentation.recipes.RecipeFilter.ALL
+                )
+            }
+            
+            composable<Route.CoopModeSelectionScreen> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.CoopModeSelectionScreen>()
+                
                 CoopModeSelectionScreen(
-                    recipeName = selectedRecipeName,
+                    recipeName = args.recipeName,
                     onDismiss = {
-                        currentScreen = Screen.RecipeList
+                        navController.popBackStack()
                     },
                     onSoloMode = {
-                        isCoopMode = false
-                        currentUserGender?.let { gender ->
-                            val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                            val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
-
-                            cookingSessionViewModel.onEvent(
-                                CookingSessionEvent.StartSession(
-                                    recipeId = selectedRecipe,
-                                    countryCode = selectedCountry,
-                                    isCoopMode = false,
-                                    coupleId = coupleId,
-                                    femaleUserId = femaleId,
-                                    maleUserId = maleId,
-                                    currentUserGender = gender
-                                )
+                        navController.navigate(
+                            Route.CookingSessionScreen(
+                                recipeId = args.recipeId,
+                                isCoopMode = false
                             )
-                            currentScreen = Screen.CookingSession
-                        }
+                        )
                     },
                     onCoopMode = {
-                        isCoopMode = true
-                        currentUserGender?.let { gender ->
-                            scope.launch {
-                                val existingSession = cookingSessionViewModel.checkAndGetWaitingSession(coupleId, selectedRecipe)
-
-                                if (existingSession != null) {
-                                    // Joining existing session - navigate immediately
-                                    cookingSessionViewModel.onEvent(
-                                        CookingSessionEvent.JoinWaitingSession(
-                                            sessionId = existingSession.sessionId,
-                                            currentUserGender = gender
-                                        )
-                                    )
-                                    currentScreen = Screen.CookingSession
-                                } else {
-                                    // Creating new session - don't navigate yet, wait for partner
-                                    val femaleId = if (gender == Gender.FEMALE) currentUserId else "waiting_for_partner"
-                                    val maleId = if (gender == Gender.MALE) currentUserId else "waiting_for_partner"
-
-                                    cookingSessionViewModel.onEvent(
-                                        CookingSessionEvent.CreateOrJoinSession(
-                                            recipeId = selectedRecipe,
-                                            countryCode = selectedCountry,
-                                            isCoopMode = true,
-                                            coupleId = coupleId,
-                                            femaleUserId = femaleId,
-                                            maleUserId = maleId,
-                                            currentUserGender = gender
-                                        )
-                                    )
-                                    // Creator waiting dialog gösterilirken RecipeList ekranına geç
-                                    // Böylece dialog kapandığında RecipeList görünür
-                                    currentScreen = Screen.RecipeList
-                                }
-                            }
-                        }
+                        navController.navigate(
+                            Route.CookingSessionScreen(
+                                recipeId = args.recipeId,
+                                isCoopMode = true
+                            )
+                        )
                     }
                 )
             }
-        }
-
-        Screen.CookingSession -> {
-            var showExitConfirmation by remember { mutableStateOf(false) }
-
-            // Handle back button - show confirmation
-            BackHandler {
-                showExitConfirmation = true
-            }
-
-            // Exit confirmation dialog
-            if (showExitConfirmation) {
-                com.emirhankarci.cookmate.presentation.components.ConfirmationDialog(
-                    title = "Emin Misiniz?",
-                    message = "Pişirme oturumundan çıkmak istediğinize emin misiniz? Kaydedilmemiş ilerlemeniz kaybolabilir.",
-                    confirmText = "Evet, Çık",
-                    dismissText = "İptal",
-                    onConfirm = {
-                        showExitConfirmation = false
-                        // Reset session state and restart observers
-                        cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
-                        if (coupleId.isNotEmpty() && currentUserGender != null) {
-                            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
-                        }
-                        currentScreen = Screen.RecipeList
-                    },
-                    onDismiss = {
-                        showExitConfirmation = false
-                    }
-                )
-            }
-
-            MainScaffold(
-                currentScreen = currentScreen,
-                onNavigate = { screen -> currentScreen = screen },
-                // DEĞİŞİKLİK: 'topBar' slotuna yeni ve temiz Header'ımızı yerleştiriyoruz.
-                topBar = {
-                    val recipeName = cookingState.recipe?.titleTurkish
-                        ?: cookingState.recipe?.title
-                        ?: "Pişirme Ekranı"
-
-                    CookingScreenHeader(
-                        recipeName = recipeName,
-                        onBack = {
-                            // Session'dan country ve recipe bilgisini al
-                            val sessionCountry = cookingState.session?.countryCode
-                            if (sessionCountry != null && sessionCountry.isNotEmpty()) {
-                                selectedCountry = sessionCountry
-                                // Tarifleri yükle
-                                recipeListViewModel.onEvent(
-                                    RecipeListEvent.LoadRecipes(sessionCountry)
-                                )
-                            }
-                            
-                            // Reset session state and restart observers
-                            cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
-                            if (coupleId.isNotEmpty() && currentUserGender != null) {
-                                cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
-                            }
-                            currentScreen = Screen.RecipeList
-                        }
-                    )
-                }
-            ) { modifier ->
-                // Scaffold'un content'i olarak CookingSessionScreen'i veriyoruz.
+            
+            composable<Route.CookingSessionScreen> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.CookingSessionScreen>()
+                
+                // Note: Recipe loading should be handled via CookingSessionEvent
+                // Example: cookingSessionViewModel.onEvent(CookingSessionEvent.StartSession(...))
+                
                 CookingSessionScreen(
-                    state = cookingState,
+                    state = cookingSessionViewModel.state.collectAsState().value,
                     onEvent = cookingSessionViewModel::onEvent,
                     onBack = {
-                        // Session'dan country ve recipe bilgisini al
-                        val sessionCountry = cookingState.session?.countryCode
-                        if (sessionCountry != null && sessionCountry.isNotEmpty()) {
-                            selectedCountry = sessionCountry
-                            // Tarifleri yükle
-                            recipeListViewModel.onEvent(
-                                RecipeListEvent.LoadRecipes(sessionCountry)
-                            )
+                        navController.popBackStack()
+                    }
+                )
+            }
+            
+            composable<Route.ProfileScreen> {
+                ProfileScreen(
+                    onLogout = {
+                        authViewModel.onEvent(AuthEvent.Logout)
+                        navController.navigate(Route.AuthGraph) {
+                            popUpTo(Route.MainGraph) { inclusive = true }
                         }
-                        
-                        // Reset session state and restart observers
-                        cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
-                        if (coupleId.isNotEmpty() && currentUserGender != null) {
-                            cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
-                        }
-                        currentScreen = Screen.RecipeList
-                    },
-                    modifier = modifier
+                    }
                 )
             }
         }
-    }
-
-    // Show dialog for partner who needs to join
-    if (cookingState.showWaitingForPartnerDialog && currentScreen != Screen.CookingSession) {
-        WaitingForPartnerDialog(
-            recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Recipe",
-            partnerName = "Your Partner",
-            onCancel = {
-                cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
-                // Partner red dediğinde CountryList'e dön
-                currentScreen = Screen.CountryList
-            },
-            onJoin = {
-                val session = cookingState.session
-                if (session != null && currentUserGender != null) {
-                    selectedCountry = session.countryCode
-                    selectedRecipe = session.recipeId
-                    isCoopMode = session.isCoopMode
-
-                    cookingSessionViewModel.onEvent(CookingSessionEvent.DismissWaitingDialog)
-
-                    cookingSessionViewModel.onEvent(
-                        CookingSessionEvent.JoinWaitingSession(
-                            sessionId = session.sessionId,
-                            currentUserGender = currentUserGender!!
-                        )
-                    )
-                    currentScreen = Screen.CookingSession
-                }
-            }
-        )
-    }
-
-    // Show dialog for creator who is waiting for partner
-    if (cookingState.isCreatorWaitingForPartner && currentScreen != Screen.CookingSession) {
-        com.emirhankarci.cookmate.presentation.cooking.components.CreatorWaitingDialog(
-            recipeName = cookingState.recipe?.titleTurkish ?: cookingState.recipe?.title ?: "Tarif",
-            onCancel = {
-                cookingSessionViewModel.onEvent(CookingSessionEvent.CancelWaitingSession)
-                // Creator cancel dediğinde tarif ekranına (RecipeList) dön
-                // selectedCountry zaten set edilmiş durumda olmalı
-                currentScreen = Screen.RecipeList
-            }
-        )
-    }
-
-    // Show dialog when partner leaves during cooking session
-    if (cookingState.showPartnerLeftDialog) {
-        com.emirhankarci.cookmate.presentation.cooking.components.PartnerLeftDialog(
-            onBackToRecipes = {
-                cookingSessionViewModel.onEvent(CookingSessionEvent.DismissPartnerLeftDialog)
-                // Reset session state and restart observers
-                cookingSessionViewModel.onEvent(CookingSessionEvent.ResetSessionState)
-                if (coupleId.isNotEmpty() && currentUserGender != null) {
-                    cookingSessionViewModel.observeWaitingSessionForCouple(coupleId, currentUserId, currentUserGender)
-                }
-                currentScreen = Screen.RecipeList
-            }
-        )
     }
 }

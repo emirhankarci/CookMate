@@ -1,5 +1,6 @@
 package com.emirhankarci.cookmate.presentation.countries
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,8 +22,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.*
@@ -42,14 +45,28 @@ fun CountryListScreen(
         viewModel.loadCountriesIfNeeded()
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFF9F5))
-    ) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = Color(0xFFFFF9F5),
+        floatingActionButton = {
+            // Floating Action Button for view toggle
+            FloatingActionButton(
+                onClick = { viewModel.onEvent(CountryListEvent.ToggleViewMode) },
+                containerColor = Color(0xFFFF69B4),
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = if (state.isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                    contentDescription = if (state.isGridView) "List View" else "Grid View"
+                )
+            }
+        }
+    ) { paddingValues ->
         // İçerik alanı
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -132,29 +149,11 @@ fun CountryListScreen(
                 }
             }
         }
-        
-        // Floating Action Button for view toggle
-        FloatingActionButton(
-            onClick = { viewModel.onEvent(CountryListEvent.ToggleViewMode) },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            containerColor = Color(0xFFFF69B4),
-            contentColor = Color.White
-        ) {
-            Icon(
-                imageVector = if (state.isGridView) Icons.Default.ViewList else Icons.Default.GridView,
-                contentDescription = if (state.isGridView) "List View" else "Grid View"
-            )
-        }
     }
 }
 
 @Composable
-fun CountryListHeader(
-    selectedFilter: String,
-    onFilterChange: (String) -> Unit
-) {
+fun CountryListHeader() {
     val brush = remember {
         Brush.linearGradient(
             colors = listOf(
@@ -164,60 +163,36 @@ fun CountryListHeader(
             )
         )
     }
-
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(brush)
             .statusBarsPadding()
             .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalAlignment = Alignment.Bottom
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.appicon),
+            contentDescription = "CookMate",
+            modifier = Modifier.size(26.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = "Choose Your Journey",
-            fontSize = 28.sp,
+            text = "CookMate",
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             textAlign = TextAlign.Center,
-            lineHeight = 34.sp
+            lineHeight = 14.sp
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Explore authentic recipes from around the world",
-            fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.9f),
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                label = "All",
-                selected = selectedFilter == "All Countries",
-                onClick = { onFilterChange("All Countries") }
-            )
-            FilterChip(
-                label = "Unlocked",
-                selected = selectedFilter == "Unlocked",
-                onClick = { onFilterChange("Unlocked") }
-            )
-            FilterChip(
-                label = "Locked",
-                selected = selectedFilter == "Locked",
-                onClick = { onFilterChange("Locked") }
-            )
-            FilterChip(
-                label = "In Progress",
-                selected = selectedFilter == "In Progress",
-                onClick = { onFilterChange("In Progress") }
-            )
-        }
     }
+}
+
+@Preview
+@Composable
+fun CountryListHeaderPreview() {
+    CountryListHeader()
 }
 
 @Composable

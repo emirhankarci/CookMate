@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.hilt.android)
     id("kotlin-kapt")
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -105,6 +106,7 @@ dependencies {
 
     // ==================== NAVIGATION ====================
     implementation(libs.androidx.navigation.compose)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // ==================== HILT ====================
     implementation(libs.hilt.android)
@@ -123,6 +125,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     
     implementation("com.airbnb.android:lottie-compose:6.4.0")
+
+    // Material 3
+    implementation("androidx.compose.material3:material3:1.5.0-alpha08")
+
 
 }
 
