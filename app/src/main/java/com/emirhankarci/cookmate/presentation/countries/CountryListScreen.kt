@@ -15,9 +15,12 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -31,12 +34,13 @@ import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.*
 import com.emirhankarci.cookmate.R
 import com.emirhankarci.cookmate.data.model.Country
+import java.time.format.TextStyle
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CountryListScreen(
     viewModel: CountryListViewModel,
-    onCountryClick: (String) -> Unit,
-    selectedFilter: String,
+    onFavouriteClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
@@ -45,701 +49,141 @@ fun CountryListScreen(
         viewModel.loadCountriesIfNeeded()
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = Color(0xFFFFF9F5),
-        floatingActionButton = {
-            // Floating Action Button for view toggle
-            FloatingActionButton(
-                onClick = { viewModel.onEvent(CountryListEvent.ToggleViewMode) },
-                containerColor = Color(0xFFFF69B4),
-                contentColor = Color.White
-            ) {
-                Icon(
-                    imageVector = if (state.isGridView) Icons.Default.ViewList else Icons.Default.GridView,
-                    contentDescription = if (state.isGridView) "List View" else "Grid View"
-                )
-            }
-        }
-    ) { paddingValues ->
-        // İçerik alanı
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                state.isLoading -> CircularProgressIndicator(
-                    color = Color(0xFFFF69B4)
-                )
-
-                state.error != null -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text("Error: ${state.error}", color = Color.DarkGray)
-                        Button(
-                            onClick = { viewModel.onEvent(CountryListEvent.Retry) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF69B4)
-                            )
-                        ) {
-                            Text("Retry")
-                        }
-                    }
-                }
-
-                else -> {
-                    val filteredCountries = when (selectedFilter) {
-                        "Unlocked" -> state.countries.filter { !state.isCountryLocked(it.countryCode) }
-                        "Locked" -> state.countries.filter { state.isCountryLocked(it.countryCode) }
-                        "In Progress" -> state.countries.filter {
-                            !state.isCountryLocked(it.countryCode) &&
-                                    state.getCompletedRecipesCount(it.countryCode) > 0 &&
-                                    state.getCompletedRecipesCount(it.countryCode) < it.totalRecipes
-                        }
-                        else -> state.countries
-                    }
-
-                    if (state.isGridView) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredCountries) { country ->
-                                CompactCountryCard(
-                                    country = country,
-                                    isLocked = state.isCountryLocked(country.countryCode),
-                                    completedRecipes = state.getCompletedRecipesCount(country.countryCode),
-                                    totalRecipes = country.totalRecipes,
-                                    onClick = {
-                                        if (!state.isCountryLocked(country.countryCode)) {
-                                            onCountryClick(country.countryCode)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(all = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(filteredCountries) { country ->
-                                CountryCard(
-                                    country = country,
-                                    isLocked = state.isCountryLocked(country.countryCode),
-                                    completedRecipes = state.getCompletedRecipesCount(country.countryCode),
-                                    totalRecipes = country.totalRecipes,
-                                    onClick = {
-                                        if (!state.isCountryLocked(country.countryCode)) {
-                                            onCountryClick(country.countryCode)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CountryListHeader() {
-    val brush = remember {
-        Brush.linearGradient(
-            colors = listOf(
-                Color(0xFFFFB6C1), // Light pink
-                Color(0xFFFF69B4), // Hot pink
-                Color(0xFFFF6B6B)  // Coral
-            )
-        )
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(brush)
-            .statusBarsPadding()
-            .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
-        verticalAlignment = Alignment.Bottom
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.appicon),
-            contentDescription = "CookMate",
-            modifier = Modifier.size(26.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = "CookMate",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            lineHeight = 14.sp
-        )
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            CountryCardRow()
+        }
 
+        FloatingActionButton(
+            onClick = { viewModel.onEvent(CountryListEvent.ToggleViewMode) },
+            containerColor = Color(0xFFFF69B4),
+            contentColor = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = if (state.isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                contentDescription = if (state.isGridView) "List View" else "Grid View"
+            )
+        }
     }
 }
 
-@Preview
-@Composable
-fun CountryListHeaderPreview() {
-    CountryListHeader()
-}
 
 @Composable
 fun FilterChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) Color.White else Color.White.copy(alpha = 0.3f),
-        modifier = Modifier.height(36.dp)
+) {}
+
+@Composable
+fun CountryCardRow() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
     ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = label,
-                fontSize = 13.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) Color(0xFFFF69B4) else Color.White
+                text = "Popular recipes in France",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2C3E50)
             )
+        }
+        
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            items(10) {
+                RecipeCard()
+            }
         }
     }
 }
 
 @Composable
-fun CountryCard(
-    country: Country,
-    isLocked: Boolean,
-    completedRecipes: Int,
-    totalRecipes: Int,
-    onClick: () -> Unit
-) {
-    val progressPercentage = if (totalRecipes > 0) {
-        (completedRecipes.toFloat() / totalRecipes * 100).toInt()
-    } else 0
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isLocked) Color(0xFFE0E0E0) else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isLocked) 2.dp else 8.dp
-        )
+fun RecipeCard() {
+    Column(
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth()
+        // Recipe Image Card
+        Card(
+            modifier = Modifier
+                .size(180.dp)
+                .aspectRatio(1f),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            if (isLocked) {
-                Column(
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ratatouille_food_img),
+                    contentDescription = "Recipe Image",
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Favorite icon
+                IconButton(
+                    onClick = { /* TODO: Add recipe ID */ },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .size(32.dp)
                 ) {
-                    // Lock icon
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Text(
-                            text = "🔒",
-                            fontSize = 32.sp
-                        )
-                    }
-
-                    // Country name
-                    Text(
-                        text = country.name,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF757575),
-                        maxLines = 1
-                    )
-
-                    // Description
-                    Text(
-                        text = country.description,
-                        fontSize = 14.sp,
-                        color = Color(0xFF9E9E9E),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Unlock button
-                    Button(
-                        onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF757575),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = "🔓 Unlock for ${country.price}₺",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Top badges row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        // Left: Completion badge or empty space
-                        if (progressPercentage == 100) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFF4CAF50),
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "✓",
-                                        color = Color.White,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.size(32.dp))
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = "Add to favourites",
+                                tint = Color(0xFFFF69B4),
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-
-                        // Right: Featured/New badge
-                        when (country.countryCode) {
-                            "france", "italy" -> FeaturedBadge()
-                            "india" -> NewBadge()
-                            else -> {}
-                        }
-                    }
-
-                    // Country flag - Lottie animation based on country code
-                    val flagResource = when (country.countryCode) {
-                        "france" -> R.raw.france_flag
-                        "italy" -> R.raw.italy_flag
-                        "turkey" -> R.raw.turkiye_flag
-                        "japan" -> R.raw.japan_flag
-                        "mexico" -> R.raw.mexico_flag
-                        else -> R.raw.france_flag // Default to france flag for other countries
-                    }
-                    
-                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(flagResource))
-                    val progress by animateLottieCompositionAsState(
-                        composition = composition,
-                        iterations = LottieConstants.IterateForever
-                    )
-                    
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(96.dp)
-                    )
-
-                    // Country name
-                    Text(
-                        text = country.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2C3E50),
-                        maxLines = 1
-                    )
-
-                    // Description
-                    Text(
-                        text = country.description,
-                        fontSize = 13.sp,
-                        color = Color(0xFF95A5A6),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Unlocked: Show progress and button
-                    // Progress info
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "$completedRecipes/$totalRecipes recipes",
-                            fontSize = 12.sp,
-                            color = Color(0xFF95A5A6)
-                        )
-                        Text(
-                            text = "$progressPercentage%",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4)
-                        )
-                    }
-
-                    // Progress bar
-                    LinearProgressIndicator(
-                        progress = progressPercentage / 100f,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4),
-                        trackColor = Color(0xFFE0E0E0)
-                    )
-
-                    // View recipes button
-                    Button(
-                        onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFF69B4)
-                        )
-                    ) {
-                        Text(
-                            text = "View Recipes →",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
             }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Recipe Info
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Ratatouille",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2C3E50),
+                maxLines = 1
+            )
         }
     }
 }
 
 @Composable
 fun CompactCountryCard(
-    country: Country,
-    isLocked: Boolean,
-    completedRecipes: Int,
-    totalRecipes: Int,
-    onClick: () -> Unit
-) {
-    val progressPercentage = if (totalRecipes > 0) {
-        (completedRecipes.toFloat() / totalRecipes * 100).toInt()
-    } else 0
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f), // Kare kart
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isLocked) Color(0xFFE0E0E0) else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isLocked) 2.dp else 6.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            if (isLocked) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Lock icon
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "🔒",
-                            fontSize = 24.sp
-                        )
-                    }
-
-                    // Country name
-                    Text(
-                        text = country.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF757575),
-                        maxLines = 1,
-                        textAlign = TextAlign.Center
-                    )
-
-                    // Description
-                    Text(
-                        text = country.description,
-                        fontSize = 10.sp,
-                        color = Color(0xFF9E9E9E),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Unlock button
-                    Button(
-                        onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF757575),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = "🔓 ${country.price}₺",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Badges row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        // Completion badge
-                        if (progressPercentage == 100) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFF4CAF50),
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "✓",
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.size(18.dp))
-                        }
-
-                        // Featured/New badge
-                        when (country.countryCode) {
-                            "france", "italy" -> CompactFeaturedBadge()
-                            "india" -> CompactNewBadge()
-                            else -> {}
-                        }
-                    }
-
-                    // Country flag - Badge ile bayrak arası spacing yok
-                    val flagResource = when (country.countryCode) {
-                        "france" -> R.raw.france_flag
-                        "italy" -> R.raw.italy_flag
-                        "turkey" -> R.raw.turkiye_flag
-                        "japan" -> R.raw.japan_flag
-                        "mexico" -> R.raw.mexico_flag
-                        else -> R.raw.france_flag
-                    }
-                    
-                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(flagResource))
-                    val progress by animateLottieCompositionAsState(
-                        composition = composition,
-                        iterations = LottieConstants.IterateForever
-                    )
-                    
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(64.dp)
-                    )
-
-                    // Country name
-                    Text(
-                        text = country.name,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2C3E50),
-                        maxLines = 1,
-                        textAlign = TextAlign.Center
-                    )
-
-                    // Description - Ülke adı ile açıklama arası spacing yok
-                    Text(
-                        text = country.description,
-                        fontSize = 8.sp,
-                        color = Color(0xFF95A5A6),
-                        textAlign = TextAlign.Center,
-                        maxLines = 1
-                    )
-
-                    // Progress info
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "$completedRecipes/$totalRecipes",
-                            fontSize = 9.sp,
-                            color = Color(0xFF95A5A6)
-                        )
-                        Text(
-                            text = "$progressPercentage%",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4)
-                        )
-                    }
-
-                    // Progress bar
-                    LinearProgressIndicator(
-                        progress = progressPercentage / 100f,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(1.5.dp)),
-                        color = if (progressPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFF69B4),
-                        trackColor = Color(0xFFE0E0E0)
-                    )
-
-
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CompactFeaturedBadge() {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFFFD700)
-    ) {
-        val composition by rememberLottieComposition(
-            LottieCompositionSpec.RawRes(R.raw.feature_star)
-        )
-        val progress by animateLottieCompositionAsState(
-            composition = composition,
-            iterations = LottieConstants.IterateForever
-        )
-
-        LottieAnimation(
-            composition = composition,
-            progress = { progress },
-            modifier = Modifier.size(24.dp)
-        )
-    }
-}
-
-@Composable
-fun CompactNewBadge() {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFFF69B4)
-    ) {
-        Text(
-            text = "New",
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-        )
-    }
-}
-
-@Composable
-fun FeaturedBadge() {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFFFD700) // Gold
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val composition by rememberLottieComposition(
-                LottieCompositionSpec.RawRes(R.raw.feature_star)
-            )
-            val progress by animateLottieCompositionAsState(
-                composition = composition,
-                iterations = LottieConstants.IterateForever
-            )
-
-            LottieAnimation(
-                composition = composition,
-                progress = { progress },
-                modifier = Modifier.size(24.dp)
-            )
-
-            Text(
-                text = "Featured",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-fun NewBadge() {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFFF69B4)
-    ) {
-        Text(
-            text = "New",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
-}
+) {}

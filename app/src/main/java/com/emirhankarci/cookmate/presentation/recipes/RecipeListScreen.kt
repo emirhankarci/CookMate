@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ fun RecipeListScreen(
     viewModel: RecipeListViewModel,
     onBack: () -> Unit,
     onRecipeClick: (String) -> Unit,
+    onFavouriteClick: (String) -> Unit = {},
     selectedFilter: RecipeFilter,
     modifier: Modifier = Modifier
 ) {
@@ -100,6 +102,9 @@ fun RecipeListScreen(
                                         if (!state.isRecipeLocked(recipe)) {
                                             onRecipeClick(recipe.recipeId)
                                         }
+                                    },
+                                    onFavouriteClick = {
+                                        onFavouriteClick(recipe.recipeId)
                                     }
                                 )
                             }
@@ -271,7 +276,8 @@ fun RecipeCard(
     status: RecipeStatus,
     isLocked: Boolean,
     difficultyText: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onFavouriteClick: () -> Unit = {}
 ) {
     val cardColor = when {
         isLocked -> Color(0xFFE0E0E0)
@@ -319,7 +325,7 @@ fun RecipeCard(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Top row: Status badge
+                    // Top row: Status badge and favourite
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -340,12 +346,12 @@ fun RecipeCard(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            if(isLocked){
+                            if (isLocked) {
                                 Text(
                                     text = "🔒",
                                     fontSize = 20.sp
                                 )
-                            }else{
+                            } else {
                                 Image(
                                     painter = painterResource(id = R.drawable.ratatouille_icon_img),
                                     contentDescription = "Recipe Icon",
@@ -355,153 +361,181 @@ fun RecipeCard(
                             }
                         }
 
-                        // Right: Status badge
-                        when {
-                            isLocked -> {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color(0xFF757575)
+                        // Right: Favourite button and Status badge
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (!isLocked) {
+                                IconButton(
+                                    onClick = onFavouriteClick,
+                                    modifier = Modifier.size(32.dp)
                                 ) {
-                                    Text(
-                                        text = "🔒 Locked",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(
-                                            horizontal = 6.dp,
-                                            vertical = 3.dp
-                                        )
-                                    )
-                                }
-                            }
-
-                            status == RecipeStatus.COMPLETED -> {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFF4CAF50),
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = "✓",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Favorite,
+                                                contentDescription = "Add to favourites",
+                                                tint = Color(0xFFFF69B4),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
+                            when {
+                                isLocked -> {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFF757575)
+                                    ) {
+                                        Text(
+                                            text = "🔒 Locked",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(
+                                                horizontal = 6.dp,
+                                                vertical = 3.dp
+                                            )
+                                        )
+                                    }
+                                }
 
-                            else -> {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color.White
-                                ) {
-                                    val composition by rememberLottieComposition(
-                                        LottieCompositionSpec.RawRes(R.raw.new_badge)
-                                    )
-                                    val progress by animateLottieCompositionAsState(
-                                        composition = composition,
-                                        iterations = LottieConstants.IterateForever
-                                    )
-                                    LottieAnimation(
-                                        composition = composition,
-                                        progress = { progress },
-                                        modifier = Modifier.size(44.dp)
-                                    )
+                                status == RecipeStatus.COMPLETED -> {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "✓",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
 
+                                else -> {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color.White
+                                    ) {
+                                        val composition by rememberLottieComposition(
+                                            LottieCompositionSpec.RawRes(R.raw.new_badge)
+                                        )
+                                        val progress by animateLottieCompositionAsState(
+                                            composition = composition,
+                                            iterations = LottieConstants.IterateForever
+                                        )
+                                        LottieAnimation(
+                                            composition = composition,
+                                            progress = { progress },
+                                            modifier = Modifier.size(44.dp)
+                                        )
+
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // Recipe name
-                    Text(
-                        text = recipe.titleTurkish.ifEmpty { recipe.title },
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isLocked) Color(0xFF757575) else Color(0xFF2C3E50),
-                        maxLines = 1
-                    )
-
-                    // English name (if different)
-                    if (recipe.titleTurkish.isNotEmpty() && recipe.title != recipe.titleTurkish) {
+                        // Recipe name
                         Text(
-                            text = recipe.title,
-                            fontSize = 12.sp,
-                            color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF95A5A6),
+                            text = recipe.titleTurkish.ifEmpty { recipe.title },
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isLocked) Color(0xFF757575) else Color(0xFF2C3E50),
                             maxLines = 1
                         )
-                    }
 
-                    // Description
-                    Text(
-                        text = recipe.description,
-                        fontSize = 12.sp,
-                        color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF637272),
-                        maxLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    if (!isLocked) {
-                        // Info badges row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Time badge
-                            InfoBadge(
-                                icon = "⏱️",
-                                text = "${recipe.estimatedTime} min"
-                            )
-                            // Servings badge
-                            InfoBadge(
-                                icon = "🍽️",
-                                text = "${recipe.servings} servings"
-                            )
-                            // Difficulty badge
-                            DifficultyBadge(
-                                difficulty = recipe.difficulty,
-                                text = difficultyText
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // CTA Button
-                        Button(
-                            onClick = onClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(42.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = when (status) {
-                                    RecipeStatus.COMPLETED -> Color(0xFF4CAF50)
-                                    else -> Color(0xFFFF69B4)
-                                }
-                            )
-                        ) {
+                        // English name (if different)
+                        if (recipe.titleTurkish.isNotEmpty() && recipe.title != recipe.titleTurkish) {
                             Text(
-                                text = when (status) {
-                                    RecipeStatus.COMPLETED -> "Cook Again →"
-                                    RecipeStatus.IN_PROGRESS -> "Continue →"
-                                    RecipeStatus.NOT_STARTED -> "Start Cooking →"
-                                },
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
+                                text = recipe.title,
+                                fontSize = 12.sp,
+                                color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF95A5A6),
+                                maxLines = 1
                             )
                         }
-                    } else {
-                        // Locked state
+
+                        // Description
                         Text(
-                            text = "Complete previous recipes to unlock",
-                            fontSize = 11.sp,
-                            color = Color(0xFF9E9E9E),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            text = recipe.description,
+                            fontSize = 12.sp,
+                            color = if (isLocked) Color(0xFF9E9E9E) else Color(0xFF637272),
+                            maxLines = 2
                         )
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (!isLocked) {
+                            // Info badges row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Time badge
+                                InfoBadge(
+                                    icon = "⏱️",
+                                    text = "${recipe.estimatedTime} min"
+                                )
+                                // Servings badge
+                                InfoBadge(
+                                    icon = "🍽️",
+                                    text = "${recipe.servings} servings"
+                                )
+                                // Difficulty badge
+                                DifficultyBadge(
+                                    difficulty = recipe.difficulty,
+                                    text = difficultyText
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // CTA Button
+                            Button(
+                                onClick = onClick,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = when (status) {
+                                        RecipeStatus.COMPLETED -> Color(0xFF4CAF50)
+                                        else -> Color(0xFFFF69B4)
+                                    }
+                                )
+                            ) {
+                                Text(
+                                    text = when (status) {
+                                        RecipeStatus.COMPLETED -> "Cook Again →"
+                                        RecipeStatus.IN_PROGRESS -> "Continue →"
+                                        RecipeStatus.NOT_STARTED -> "Start Cooking →"
+                                    },
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            // Locked state
+                            Text(
+                                text = "Complete previous recipes to unlock",
+                                fontSize = 11.sp,
+                                color = Color(0xFF9E9E9E),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }

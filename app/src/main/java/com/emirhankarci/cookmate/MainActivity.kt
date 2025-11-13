@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
     private val countryListViewModel: CountryListViewModel by viewModels()
     private val recipeListViewModel: RecipeListViewModel by viewModels()
     private val cookingSessionViewModel: CookingSessionViewModel by viewModels()
+    private val favouriteRecipesViewModel: com.emirhankarci.cookmate.presentation.favourites.FavouriteRecipesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +39,8 @@ class MainActivity : ComponentActivity() {
                     countryListViewModel = countryListViewModel,
                     recipeListViewModel = recipeListViewModel,
                     cookingSessionViewModel = cookingSessionViewModel,
-                    userSelectionViewModel = userSelectionViewModel
+                    userSelectionViewModel = userSelectionViewModel,
+                    favouriteRecipesViewModel = favouriteRecipesViewModel
                 )
             }
         }

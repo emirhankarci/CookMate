@@ -171,4 +171,74 @@ class FirebaseRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    // ==================== FAVOURITE RECIPES OPERATIONS ====================
+
+    suspend fun getFavouriteRecipes(userId: String): Result<List<Recipe>> {
+        return try {
+            val snapshot = firebaseDataSource.getUserFavouritesRef(userId).get().await()
+
+            val recipeIds = mutableListOf<String>()
+            snapshot.children.forEach { child ->
+                child.key?.let { recipeIds.add(it) }
+            }
+
+            val recipes = mutableListOf<Recipe>()
+            recipeIds.forEach { recipeId ->
+                // Get recipe details from all countries
+                val countries = listOf("france", "italy", "turkey", "japan", "mexico")
+                for (countryCode in countries) {
+                    val recipeSnapshot = firebaseDataSource
+                        .getRecipeRef(countryCode, recipeId)
+                        .get()
+                        .await()
+                    
+                    recipeSnapshot.getValue(Recipe::class.java)?.let {
+                        recipes.add(it)
+                        return@forEach
+                    }
+                }
+            }
+
+            Result.success(recipes)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun addFavouriteRecipe(userId: String, recipeId: String): Result<Unit> {
+        return try {
+            firebaseDataSource
+                .getUserFavouriteRecipeRef(userId, recipeId)
+                .setValue(true)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun removeFavouriteRecipe(userId: String, recipeId: String): Result<Unit> {
+        return try {
+            firebaseDataSource
+                .getUserFavouriteRecipeRef(userId, recipeId)
+                .removeValue()
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun isFavouriteRecipe(userId: String, recipeId: String): Result<Boolean> {
+        return try {
+            val snapshot = firebaseDataSource
+                .getUserFavouriteRecipeRef(userId, recipeId)
+                .get()
+                .await()
+            Result.success(snapshot.exists())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

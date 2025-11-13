@@ -69,4 +69,17 @@ class FirebaseDataSource @Inject constructor() {
     fun isConnected(): DatabaseReference {
         return database.getReference(".info/connected")
     }
+
+    // ==================== USER FAVOURITES ====================
+
+    fun getUsersRef(): DatabaseReference = database.getReference("users")
+
+    fun getUserRef(userId: String): DatabaseReference =
+        getUsersRef().child(userId)
+
+    fun getUserFavouritesRef(userId: String): DatabaseReference =
+        getUserRef(userId).child("favouriteRecipes")
+
+    fun getUserFavouriteRecipeRef(userId: String, recipeId: String): DatabaseReference =
+        getUserFavouritesRef(userId).child(recipeId)
 }

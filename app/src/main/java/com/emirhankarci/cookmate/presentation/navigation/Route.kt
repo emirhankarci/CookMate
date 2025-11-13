@@ -24,6 +24,9 @@ sealed interface Route {
     data object MainGraph : Route
     
     @Serializable
+    data object CountrySelectScreen : Route
+    
+    @Serializable
     data object CountryListScreen : Route
     
     @Serializable
@@ -40,6 +43,9 @@ sealed interface Route {
         val recipeId: String,
         val isCoopMode: Boolean
     ) : Route
+    
+    @Serializable
+    data object FavouriteRecipesScreen : Route
     
     @Serializable
     data object ProfileScreen : Route
